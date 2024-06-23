@@ -56,5 +56,4 @@ Thumbs.db
 **/temp/
 
 # Node (if you're using npm for the extension)
-node_modules/
 npm-debug.log

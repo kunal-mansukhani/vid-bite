@@ -1,0 +1,1 @@
+export {}; // This file is now empty, but we keep it as a module

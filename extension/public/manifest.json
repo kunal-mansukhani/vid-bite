@@ -8,7 +8,8 @@
     "default_title": "Open the popup"
   },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "file://*"
   ],
   "background": {
     "service_worker": "static/js/background.js"

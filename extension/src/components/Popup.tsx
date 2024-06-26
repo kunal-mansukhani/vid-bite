@@ -9,16 +9,49 @@ const Popup: React.FC = () => {
   const handleGenerateVideo = () => {
     setIsLoading(true);
     setError(null);
-    chrome.runtime.sendMessage({ action: 'generateVideo', text: inputText }, (response) => {
-      setIsLoading(false);
-      if (response.videoData) {
-        const blob = new Blob([Uint8Array.from(atob(response.videoData), c => c.charCodeAt(0))], { type: 'video/mp4' });
-        const url = URL.createObjectURL(blob);
-        setVideoUrl(url);
-      } else if (response.error) {
-        setError(response.error);
-      }
-    });
+    setVideoUrl(null);
+  
+    const generateVideo = (text: string) => {
+      return fetch('http://localhost:8000/generate_video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, style: "default" }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.videoUrl) {
+          setVideoUrl(data.videoUrl);
+          console.log('Video URL:', data.videoUrl);
+        } else {
+          throw new Error('Video URL not found in the response');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setError('Failed to generate video');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+    };
+  
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      // Chrome extension logic
+      chrome.runtime.sendMessage({ action: 'generateVideo', text: inputText }, (response) => {
+        setIsLoading(false);
+        if (response.videoUrl) {
+          setVideoUrl(response.videoUrl);
+          console.log('Video URL:', response.videoUrl);
+        } else if (response.error) {
+          setError(response.error);
+        }
+      });
+    } else {
+      // React development server logic
+      generateVideo(inputText);
+    }
   };
 
   return (
@@ -37,9 +70,12 @@ const Popup: React.FC = () => {
       {isLoading && <p>Generating video...</p>}
       {error && <p>Error: {error}</p>}
       {videoUrl && (
-        <video controls src={videoUrl} style={{ maxWidth: '100%', marginTop: '10px' }}>
-          Your browser does not support the video tag.
-        </video>
+        <div>
+          <p>Video URL: {videoUrl}</p>
+          <video controls src={videoUrl} style={{ maxWidth: '100%', marginTop: '10px' }}>
+            Your browser does not support the video tag.
+          </video>
+        </div>
       )}
     </div>
   );

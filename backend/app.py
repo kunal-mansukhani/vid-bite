@@ -39,9 +39,10 @@ async def generate_video(input: TextInput):
         video_path = render_manim_video(manim_code)
 
         # Construct the URL for the video
-        video_url = f"http://localhost:8000/{video_path.relative_to(Path.cwd())}"
+        video_url = f"http://localhost:8000/{video_path}"
 
         # Return the URL of the generated video
+        print(f"Video URL: {video_url}")
         return JSONResponse(content={"videoUrl": video_url})
     except Exception as e:
         print(f"Error in generate_video: {str(e)}")  # Add this line for logging

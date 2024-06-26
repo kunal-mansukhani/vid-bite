@@ -1,6 +1,6 @@
 def get_plan_prompt(text: str) -> str:
     return f"""
-    Task: Develop a comprehensive plan for a 10-30 second animation using Manim to teach and visualize the following concept: {text}
+    Task: Develop a comprehensive plan for a 10-30 second animation using Manim to visualize the following concept: {text}
 
     Please provide:
     1. A clear, step-by-step outline of the animation sequence

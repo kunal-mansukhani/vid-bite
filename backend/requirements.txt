@@ -6,3 +6,4 @@ bs4==0.0.2
 langchain-community==0.2.6
 langchain-google-vertexai==1.0.6
 sentence-transformers==3.0.1
+chromadb==0.5.3

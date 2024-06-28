@@ -6,13 +6,14 @@ def get_plan_prompt(text: str) -> str:
     1. A clear, step-by-step outline of the animation sequence
     2. Make sure to provide detailed instructions on how to transition out of one scene and into another
     3. Extremely precise and detailed descriptions of each visual element and transition
-    4. Specific timing suggestions for each step
+    4. Specific timing suggestions for each step and specific size and locations for each visual/text piece
     5. Potential technical challenges a programmer might face during implementation
     6. Proposed solutions or workarounds for each identified challenge
-    7. Avoid including external images and/or audio in your plan
-    8. For each scene, include a section about the visuals, text, transition in, and transition out
+    7. Avoid mentioning external images and files in your plan
+    8. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
+    9. Keep it to a maximum of 5 scenes.
 
-    Your plan should be sufficiently detailed to allow a programmer to implement the animation in Manim without additional guidance.
+    Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Youe animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
 
     Structure your response as follows:
     1. Animation Plan
@@ -20,21 +21,21 @@ def get_plan_prompt(text: str) -> str:
 
     Begin your response with the Animation Plan.
     """
-def get_code_prompt(animation_plan: str) -> str:
+def get_code_prompt(text: str) -> str:
     return f"""
-    Based on the provided animation plan, generate a complete, self-contained Manim code implementation:
-
-    
-    {animation_plan}
-
+    Write manim code that visualizes the following: {text}
     Requirements:
     1. Include all necessary imports at the beginning of the file.
     2. Implement the entire animation in a single, well-structured scene class.
     3. Ensure the code is fully executable without any external dependencies or additional files.
     4. Avoid using external resources such as GIFs, images, or custom fonts.
-    5. Optimize the code for clarity, efficiency, and adherence to Manim best practices and ensure all the text fits on the screen.
+    5. Do not write any comments and keep variable names to maximum of 2 characters long
+    6. Use MathTex for mathematical expressions
+    7. Optimize the code for clarity, efficiency, and adherence to Manim best practices and ensure all the text fits on the screen.
+    8. Use Manim Voiceover Azure for the voice over and ensure the voice over is synced with the animation
+    10. Make sure text doesn't overlap with each other and that it all fits on the screen
 
-    Your response should consist solely of the Python code for Manim, without any additional explanations or comments.
+    Your response should consist solely of the Python code for Manim, without any additional explanations or comments or introductory sentence.
 
     Here are some examples of good manim animation code:
     {EXAMPLES}
@@ -56,157 +57,331 @@ def get_error_fixing_prompt(code: str, error: str) -> str:
     - The code should run out-of-the-box WITHOUT additional files like external gifs or images
     """
 EXAMPLES = """
-Example 1: BraceAnnotation
+Example 1:
 from manim import *
+import pygments.styles as code_styles
+from manim_voiceover import VoiceoverScene
 
-class BraceAnnotation(Scene):
-    def construct(self):
-        dot = Dot([-2, -1, 0])
-        dot2 = Dot([2, 1, 0])
-        line = Line(dot.get_center(), dot2.get_center()).set_color(ORANGE)
-        b1 = Brace(line)
-        b1text = b1.get_text("Horizontal distance")
-        b2 = Brace(line, direction=line.copy().rotate(PI / 2).get_unit_vector())
-        b2text = b2.get_tex("x-x_1")
-        self.add(line, dot, dot2, b1, b2, b1text, b2text)
-Example 2:
-VectorArrow
-from manim import *
+from manim_voiceover.services.azure import AzureService
 
-class VectorArrow(Scene):
-    def construct(self):
-        dot = Dot(ORIGIN)
-        arrow = Arrow(ORIGIN, [2, 2, 0], buff=0)
-        numberplane = NumberPlane()
-        origin_text = Text('(0, 0)').next_to(dot, DOWN)
-        tip_text = Text('(2, 2)').next_to(arrow.get_end(), RIGHT)
-        self.add(numberplane, dot, arrow, origin_text, tip_text)
-Example 3:
-GradientImageFromArray
-from manim import *
+code_style = code_styles.get_style_by_name('one-dark')
 
-class GradientImageFromArray(Scene):
+
+class VoiceoverDemo(VoiceoverScene):
     def construct(self):
-        n = 256
-        imageArray = np.uint8(
-            [[i * 256 / n for i in range(0, n)] for _ in range(0, n)]
+        # Initialize speech synthesis using Azure's TTS API
+        self.set_speech_service(
+            AzureService(
+                voice='en-US-AriaNeural',
+                style='newscast-casual',  # global_speed=1.15
+            )
         )
-        image = ImageMobject(imageArray).scale(2)
-        image.background_rectangle = SurroundingRectangle(image, GREEN)
-        self.add(image, image.background_rectangle)
-Example 4: 
-BooleanOperations
-from manim import *
+        banner = ManimBanner().scale(0.5)
 
-class BooleanOperations(Scene):
-    def construct(self):
-        ellipse1 = Ellipse(
-            width=4.0, height=5.0, fill_opacity=0.5, color=BLUE, stroke_width=10
-        ).move_to(LEFT)
-        ellipse2 = ellipse1.copy().set_color(color=RED).move_to(RIGHT)
-        bool_ops_text = MarkupText("<u>Boolean Operation</u>").next_to(ellipse1, UP * 3)
-        ellipse_group = Group(bool_ops_text, ellipse1, ellipse2).move_to(LEFT * 3)
-        self.play(FadeIn(ellipse_group))
+        with self.voiceover(text='Hey Manim Community!'):
+            self.play(
+                banner.create(),
+            )
 
-        i = Intersection(ellipse1, ellipse2, color=GREEN, fill_opacity=0.5)
-        self.play(i.animate.scale(0.25).move_to(RIGHT * 5 + UP * 2.5))
-        intersection_text = Text("Intersection", font_size=23).next_to(i, UP)
-        self.play(FadeIn(intersection_text))
-
-        u = Union(ellipse1, ellipse2, color=ORANGE, fill_opacity=0.5)
-        union_text = Text("Union", font_size=23)
-        self.play(u.animate.scale(0.3).next_to(i, DOWN, buff=union_text.height * 3))
-        union_text.next_to(u, UP)
-        self.play(FadeIn(union_text))
-
-        e = Exclusion(ellipse1, ellipse2, color=YELLOW, fill_opacity=0.5)
-        exclusion_text = Text("Exclusion", font_size=23)
-        self.play(e.animate.scale(0.3).next_to(u, DOWN, buff=exclusion_text.height * 3.5))
-        exclusion_text.next_to(e, UP)
-        self.play(FadeIn(exclusion_text))
-
-        d = Difference(ellipse1, ellipse2, color=PINK, fill_opacity=0.5)
-        difference_text = Text("Difference", font_size=23)
-        self.play(d.animate.scale(0.3).next_to(u, LEFT, buff=difference_text.height * 3.5))
-        difference_text.next_to(d, UP)
-        self.play(FadeIn(difference_text))
-
-Example 5:
-PointMovingOnShapes
-from manim import *
-
-class PointMovingOnShapes(Scene):
-    def construct(self):
-        circle = Circle(radius=1, color=BLUE)
-        dot = Dot()
-        dot2 = dot.copy().shift(RIGHT)
-        self.add(dot)
-
-        line = Line([3, 0, 0], [5, 0, 0])
-        self.add(line)
-
-        self.play(GrowFromCenter(circle))
-        self.play(Transform(dot, dot2))
-        self.play(MoveAlongPath(dot, circle), run_time=2, rate_func=linear)
-        self.play(Rotating(dot, about_point=[2, 0, 0]), run_time=1.5)
-        self.wait()
-Example 6:
-MovingAround
-from manim import *
-
-class MovingAround(Scene):
-    def construct(self):
-        square = Square(color=BLUE, fill_opacity=1)
-
-        self.play(square.animate.shift(LEFT))
-        self.play(square.animate.set_fill(ORANGE))
-        self.play(square.animate.scale(0.3))
-        self.play(square.animate.rotate(0.4))
-Example 7:
-MovingAngle
-from manim import *
-
-class MovingAngle(Scene):
-    def construct(self):
-        rotation_center = LEFT
-
-        theta_tracker = ValueTracker(110)
-        line1 = Line(LEFT, RIGHT)
-        line_moving = Line(LEFT, RIGHT)
-        line_ref = line_moving.copy()
-        line_moving.rotate(
-            theta_tracker.get_value() * DEGREES, about_point=rotation_center
-        )
-        a = Angle(line1, line_moving, radius=0.5, other_angle=False)
-        tex = MathTex(r"\theta").move_to(
-            Angle(
-                line1, line_moving, radius=0.5 + 3 * SMALL_BUFF, other_angle=False
-            ).point_from_proportion(0.5)
+        tracker = self.add_voiceover_text(
+            'Today, I want to show you how you can generate voiceovers directly in your Python code.'
         )
 
-        self.add(line1, line_moving, a, tex)
-        self.wait()
+        self.play(banner.expand())
+        self.wait(tracker.get_remaining_duration(buff=-1))
+        self.play(FadeOut(banner))
 
-        line_moving.add_updater(
-            lambda x: x.become(line_ref.copy()).rotate(
-                theta_tracker.get_value() * DEGREES, about_point=rotation_center
+        demo_code = Code(
+            code='''tracker = self.add_voiceover_text(
+    '''AI generated voices have become realistic
+        enough for use in most content. Using neural
+        text-to-speech frees you from the painstaking
+        process of recording and manually syncing
+        audio to your video.'''
+)
+self.play(Write(demo_code), run_time=tracker.duration)''',
+            insert_line_no=False,
+            style=code_style,
+            background='window',
+            font='Consolas',
+            language='python',
+        ).rescale_to_fit(12, 0)
+
+        tracker = self.add_voiceover_text(
+            '''AI generated voices have become realistic
+                enough for use in most content. Using neural
+                text-to-speech frees you from the painstaking
+                process of recording and manually syncing
+                audio to your video.'''
+        )
+        self.play(Write(demo_code), run_time=tracker.duration)
+
+        with self.voiceover(
+            text='''As you can see, Manim started playing this voiceover,
+                right as the code object started to be drawn.
+                Let's see some more examples.'''
+        ):
+            pass
+
+        self.play(FadeOut(demo_code))
+
+        circle = Circle()
+        square = Square().shift(2 * RIGHT)
+
+        with self.voiceover(text='This circle is drawn as I speak.') as tracker:
+            self.play(Create(circle), run_time=tracker.duration)
+
+        with self.voiceover(text='Let's shift it to the left 2 units.') as tracker:
+            self.play(circle.animate.shift(2 * LEFT), run_time=tracker.duration)
+
+        with self.voiceover(text='Now, let's transform it into a square.') as tracker:
+            self.play(Transform(circle, square), run_time=tracker.duration)
+
+        with self.voiceover(text='I would go on, but you get the idea.'):
+            self.play(FadeOut(circle))
+
+        demo_code2 = Code(
+            code='''class VoiceoverDemo(VoiceoverScene):
+    def construct(self):
+        self.set_speech_service(
+            AzureService(
+                voice='en-US-AriaNeural',
+                style='newscast-casual',
+                global_speed=1.15
+            )
+        )
+        circle = Circle()
+
+        with self.voiceover(text='This circle is drawn as I speak.'):
+            self.play(Create(circle))
+
+        with self.voiceover(text='Let's shift it to the left 2 units.') as tracker:
+            self.play(circle.animate.shift(2 * LEFT), run_time=tracker.duration)''',
+            insert_line_no=False,
+            style=code_style,
+            background='window',
+            font='Consolas',
+            language='python',
+        ).rescale_to_fit(12, 0)
+
+        with self.voiceover(text='Let's see how the API works!'):
+            self.play(FadeIn(demo_code2.background_mobject))
+
+        with self.voiceover(
+            text='First, we create a scene using the Voiceover Scene class from the plugin.'
+        ):
+            self.play(FadeIn(demo_code2.code[:2]))
+
+        with self.voiceover(
+            text='Then, we initialize the voiceover by setting the appropriate speech synthesizer.'
+        ):
+            self.play(FadeIn(demo_code2.code[2]))
+
+        with self.voiceover(text='In this example, we use Azure Text-to-speech.'):
+            self.play(FadeIn(demo_code2.code[3]))
+
+        with self.voiceover(
+            text='We use the English speaking neural voice called Aria.'
+        ):
+            self.play(FadeIn(demo_code2.code[4]))
+
+        with self.voiceover(text='We use the style called 'newscast casual'.'):
+            self.play(FadeIn(demo_code2.code[5]))
+
+        with self.voiceover(
+            text='''Finally, we give an option to speed up the voiceover
+            playback fifteen percent, because the default is a bit too slow.'''
+        ):
+            self.play(FadeIn(demo_code2.code[6:9]))
+
+        with self.voiceover(
+            text='''With the configuration out of the way, it is time to animate.'''
+        ):
+            pass
+
+        with self.voiceover(text='''Let's initialize the circle object.'''):
+            self.play(FadeIn(demo_code2.code[9:11]))
+
+        with self.voiceover(
+            text='''Then, we need to tell the scene to start narrating,
+            by calling the function 'self-dot-voiceover'.'''
+        ):
+            self.play(FadeIn(demo_code2.code[11]))
+
+        with self.voiceover(
+            text='''By wrapping our animation inside a 'with-statement',
+            we ensure that once it finishes playing, it will also wait for
+            the voiceover playback to finish.'''
+        ):
+            self.play(FadeIn(demo_code2.code[12]))
+
+        with self.voiceover(
+            text='''This is extremely convenient, and let's you chain
+            voiceovers back to back without having to think how long they are.'''
+        ):
+            pass
+
+        with self.voiceover(
+            text='''We just need to repeat the same pattern with self-dot-voiceover and with-statements. Here is something cool.'''
+        ):
+            self.play(FadeIn(demo_code2.code[14]))
+
+        with self.voiceover(
+            text='''We can retrieve the duration of the generated voiceover programmatically, and then use it to define for how long an animation should play.'''
+        ):
+            self.play(FadeIn(demo_code2.code[15]))
+
+        demo_code3 = Code(
+            code='''class VoiceoverDemo(VoiceoverScene):
+    def construct(self):
+        self.set_speech_service(
+            AzureService(
+                voice='en-US-AriaNeural',
+                style='newscast-casual',
+                global_speed=1.15
+            )
+        )
+        # self.set_speech_service(
+        #     StitcherService('my_voice_recording.mp3')
+        # )
+        ''',
+            insert_line_no=False,
+            style=code_style,
+            background='window',
+            font='Consolas',
+            language='python',
+        ).scale(0.85)
+
+        demo_code4 = (
+            Code(
+                code='''class VoiceoverDemo(VoiceoverScene):
+    def construct(self):
+        # self.set_speech_service(
+        #     AzureService(
+        #         voice='en-US-AriaNeural',
+        #         style='newscast-casual',
+        #         global_speed=1.15
+        #     )
+        # )
+        # self.set_speech_service(
+        #     StitcherService('my_voice_recording.mp3')
+        # )
+        ''',
+                insert_line_no=False,
+                style=code_style,
+                background='window',
+                font='Consolas',
+                language='python',
+            )
+            .scale(0.85)
+            .align_to(demo_code3, LEFT)
+        )
+
+        demo_code5 = (
+            Code(
+                code='''class VoiceoverDemo(VoiceoverScene):
+    def construct(self):
+        # self.set_speech_service(
+        #     AzureService(
+        #         voice='en-US-AriaNeural',
+        #         style='newscast-casual',
+        #         global_speed=1.15
+        #     )
+        # )
+        self.set_speech_service(
+            StitcherService('my_voice_recording.mp3')
+        )
+        ''',
+                insert_line_no=False,
+                style=code_style,
+                background='window',
+                font='Consolas',
+                language='python',
+            )
+            .scale(0.85)
+            .align_to(demo_code3, LEFT)
+        )
+
+        with self.voiceover(
+            text='And that's not even the best part! You can switch the AI generated voice with an actual recording of your voice very easily.'
+        ):
+            self.play(FadeOut(demo_code2))
+            self.wait()
+            text1 = Tex('AI voice')
+            arrow = Tex(r'$\rightarrow$')
+            text2 = Tex('Voice recording')
+            VGroup(text1, arrow, text2).arrange(RIGHT)
+            self.play(Write(text1))
+            self.play(Write(arrow))
+            self.wait()
+            self.play(Write(text2))
+            self.wait()
+            self.play(FadeOut(text1, text2, arrow))
+
+        with self.voiceover(
+            text='To do that, you record an MP3 of the final text of your video.'
+        ):
+            self.play(FadeIn(demo_code3))
+
+        with self.voiceover(
+            text='''Manim-voiceover then splits your audio automatically and replaces the AI generated voice with your real recording.'''
+        ):
+            self.play(FadeOut(demo_code3.code), FadeIn(demo_code4.code))
+            self.play(FadeOut(demo_code4.code), FadeIn(demo_code5.code))
+
+        self.wait(2)
+
+        with self.voiceover(
+            text='''Manim-voiceover makes it much easier to do voiceovers for Manim projects.'''
+        ):
+            self.play(FadeOut(demo_code5.code, demo_code3.background_mobject))
+
+        with self.voiceover(
+            text='Visit the GitHub repo to start using it in your project.'
+        ):
+            self.play(
+                FadeIn(
+                    Tex(r'\texttt{https://github.com/ManimCommunity/manim-voiceover}')
+                )
+            )
+
+    self.wait(5)
+
+    Example 2:
+    from manim import *
+from manim_voiceover import VoiceoverScene
+from manim_voiceover.services.azure import AzureService
+
+
+class AzureExample(VoiceoverScene):
+    def construct(self):
+        self.set_speech_service(
+            AzureService(
+                voice="en-US-AriaNeural",
+                style="newscast-casual",
             )
         )
 
-        a.add_updater(
-            lambda x: x.become(Angle(line1, line_moving, radius=0.5, other_angle=False))
-        )
-        tex.add_updater(
-            lambda x: x.move_to(
-                Angle(
-                    line1, line_moving, radius=0.5 + 3 * SMALL_BUFF, other_angle=False
-                ).point_from_proportion(0.5)
-            )
-        )
+        circle = Circle()
+        square = Square().shift(2 * RIGHT)
 
-        self.play(theta_tracker.animate.set_value(40))
-        self.play(theta_tracker.animate.increment_value(140))
-        self.play(tex.animate.set_color(RED), run_time=0.5)
-        self.play(theta_tracker.animate.set_value(350))
+        with self.voiceover(text="This circle is drawn as I speak.") as tracker:
+            self.play(Create(circle), run_time=tracker.duration)
 
+        with self.voiceover(text="Let's shift it to the left 2 units.") as tracker:
+            self.play(circle.animate.shift(2 * LEFT), run_time=tracker.duration)
+
+        with self.voiceover(text="Now, let's transform it into a square.") as tracker:
+            self.play(Transform(circle, square), run_time=tracker.duration)
+
+        with self.voiceover(
+            text="You can also change the pitch of my voice like this.",
+            prosody={"pitch": "+40Hz"},
+        ) as tracker:
+            pass
+
+        with self.voiceover(text="Thank you for watching."):
+            self.play(Uncreate(circle))
+
+        self.wait()
 """

@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt
+import anthropic
 
 app = FastAPI()
 # Add CORS middleware
@@ -26,16 +27,18 @@ app.add_middleware(
 app.mount("/media", StaticFiles(directory="media"), name="media")
 
 genai.configure(api_key='AIzaSyCmf5l6rdp6UPR29W15b-6AaVrvWrA3-wU')
+claude = anthropic.Anthropic(api_key='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')
 
 class TextInput(BaseModel):
     text: str
     style: Optional[str] = "default"
+    use_claude: Optional[bool] = False
 
 @app.post("/generate_video")
 async def generate_video(input: TextInput):
     try:
-        # Generate Manim code using Gemini
-        manim_code = generate_manim_code(input.text, input.style)
+        # Generate Manim code using Gemini or Claude
+        manim_code = generate_manim_code(input.text, input.style, True)
         video_path = render_manim_video(manim_code)
 
         # Construct the URL for the video
@@ -48,22 +51,45 @@ async def generate_video(input: TextInput):
         print(f"Error in generate_video: {str(e)}")  # Add this line for logging
         raise HTTPException(status_code=500, detail=str(e))
 
-def generate_manim_code(text: str, style: str) -> str:
+def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     # Use Gemini 1.5 Flash to generate the animation plan
-    pro_model = genai.GenerativeModel('gemini-1.5-flash')
-    plan_prompt = get_plan_prompt(text)
+    flash_model = genai.GenerativeModel('gemini-1.5-flash')
 
-    plan_response = pro_model.generate_content(plan_prompt)
-    animation_plan = plan_response.text.strip()
+    #plan_prompt = get_plan_prompt(text)
 
-    print("Animation Plan:")
-    print(animation_plan)
-    # Use Gemini Pro to generate the Manim code based on the plan
-    pro_model = genai.GenerativeModel('gemini-1.5-pro')
+    #plan_response = flash_model.generate_content(plan_prompt)
+    #animation_plan = plan_response.text.strip()
 
+    #print("Animation Plan:")
+   # print(animation_plan)
 
-    code_response = pro_model.generate_content(get_code_prompt(animation_plan))
-    manim_code = code_response.text.strip()
+    if use_claude:
+        # Use Claude to generate the Manim code based on the plan
+        code_prompt = get_code_prompt(text)
+        message = claude.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=2000,
+            temperature=1,
+            system="You are an expert Manim programmer. Respond only with complete, executable Manim code.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": code_prompt
+                        }
+                    ]
+                }
+            ]
+        )
+        manim_code = message.content[0].text.strip()
+    else:
+        # Use Gemini Pro to generate the Manim code based on the plan
+        pro_model = genai.GenerativeModel('gemini-1.5-pro')
+        code_response = pro_model.generate_content(get_code_prompt(animation_plan))
+        manim_code = code_response.text.strip()
+
     manim_code = manim_code.replace("```python", "").replace("```", "")
 
     print("\nManim Code:")
@@ -72,7 +98,8 @@ def generate_manim_code(text: str, style: str) -> str:
     return manim_code
 
 def render_manim_video(manim_code: str, max_attempts=4):
-    flash_model = genai.GenerativeModel('gemini-1.5-pro')
+    pro_model = genai.GenerativeModel('gemini-1.5-pro')
+    flash_model = genai.GenerativeModel('gemini-1.5-flash')
     attempt = 0
     
     while attempt < max_attempts:

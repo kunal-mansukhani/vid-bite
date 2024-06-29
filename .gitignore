@@ -6,6 +6,7 @@ __pycache__/
 .Python
 **/env/
 venv/
+.venv/
 ENV/
 build/
 develop-eggs/
@@ -57,3 +58,4 @@ Thumbs.db
 
 # Node (if you're using npm for the extension)
 npm-debug.log
+**/*.pkl

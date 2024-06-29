@@ -4,6 +4,6 @@ google-generativeai==0.7.0
 pydantic==2.7.4
 bs4==0.0.2
 langchain-community==0.2.6
-langchain-huggingface=0.0.3
+langchain-huggingface==0.0.3
 sentence-transformers==3.0.1
 chromadb==0.5.3

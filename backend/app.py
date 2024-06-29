@@ -13,15 +13,15 @@ from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt
 import anthropic
+from RAG import query
 
 app = FastAPI()
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Allow requests from your React app
+    allow_origins=["http://localhost:3000"], 
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"], 
+    allow_headers=["*"], 
 )
 # Configure the Gemini API
 app.mount("/media", StaticFiles(directory="media"), name="media")
@@ -37,34 +37,30 @@ class TextInput(BaseModel):
 @app.post("/generate_video")
 async def generate_video(input: TextInput):
     try:
-        # Generate Manim code using Gemini or Claude
         manim_code = generate_manim_code(input.text, input.style, True)
         video_path = render_manim_video(manim_code)
 
-        # Construct the URL for the video
         video_url = f"http://localhost:8000/{video_path}"
 
-        # Return the URL of the generated video
         print(f"Video URL: {video_url}")
         return JSONResponse(content={"videoUrl": video_url})
     except Exception as e:
-        print(f"Error in generate_video: {str(e)}")  # Add this line for logging
+        print(f"Error in generate_video: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     # Use Gemini 1.5 Flash to generate the animation plan
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
 
-    #plan_prompt = get_plan_prompt(text)
+    plan_prompt = get_plan_prompt(text)
 
-    #plan_response = flash_model.generate_content(plan_prompt)
-    #animation_plan = plan_response.text.strip()
+    plan_response = flash_model.generate_content(plan_prompt)
+    animation_plan = plan_response.text.strip()
 
-    #print("Animation Plan:")
-   # print(animation_plan)
+    print("Animation Plan:")
+    print(animation_plan)
 
     if use_claude:
-        # Use Claude to generate the Manim code based on the plan
         code_prompt = get_code_prompt(text)
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",
@@ -85,7 +81,6 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
         )
         manim_code = message.content[0].text.strip()
     else:
-        # Use Gemini Pro to generate the Manim code based on the plan
         pro_model = genai.GenerativeModel('gemini-1.5-pro')
         code_response = pro_model.generate_content(get_code_prompt(animation_plan))
         manim_code = code_response.text.strip()
@@ -108,18 +103,15 @@ def render_manim_video(manim_code: str, max_attempts=4):
             temp_file_path = temp_file.name
 
         try:
-            # Clear the media directory before rendering
             media_dir = Path("media")
             if media_dir.exists():
                 shutil.rmtree(media_dir)
 
-            # Run Manim to generate the video
             result = subprocess.run(["manim", "-qm", temp_file_path], 
                                     check=True, 
                                     capture_output=True, 
                                     text=True)
             
-            # Determine the scene name (assuming it's the class name 'AnGen')                        
             video_dir = Path("media") / "videos" / Path(temp_file_path).stem / "720p30"
             video_files = list(video_dir.glob("*.mp4"))
             print(f"Video files: {video_files}")
@@ -135,10 +127,8 @@ def render_manim_video(manim_code: str, max_attempts=4):
             print(f"Manim error output: {e.stderr}")
             
             if attempt < max_attempts - 1:
-                # Ask Gemini to analyze the error and suggest fixes
                 fix_response = flash_model.generate_content(get_error_fixing_prompt(manim_code, e.stderr))
                 
-                # Extract the corrected code from the response
                 corrected_code = fix_response.text.split("```python")[-1].split("```")[0].strip()
                 
                 manim_code = corrected_code

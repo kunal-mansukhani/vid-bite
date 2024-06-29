@@ -7,3 +7,6 @@ langchain-community==0.2.6
 langchain-huggingface==0.0.3
 sentence-transformers==3.0.1
 chromadb==0.5.3
+anthropic==0.30.0
+manim-voiceover==0.3.6.post0
+azure-cognitiveservices-speech==1.38.0

@@ -13,7 +13,7 @@ from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt
 import anthropic
-from RAG import query
+
 
 app = FastAPI()
 app.add_middleware(
@@ -37,7 +37,7 @@ class TextInput(BaseModel):
 @app.post("/generate_video")
 async def generate_video(input: TextInput):
     try:
-        manim_code = generate_manim_code(input.text, input.style, True)
+        manim_code = generate_manim_code(input.text, input.style, use_claude=True)
         video_path = render_manim_video(manim_code)
 
         video_url = f"http://localhost:8000/{video_path}"
@@ -56,12 +56,28 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
 
     plan_response = flash_model.generate_content(plan_prompt)
     animation_plan = plan_response.text.strip()
+    
+    # Parse response to find potential keywords
+    potential_keywords = ""
+    if "Potential Key Words:" in animation_plan:
+        potential_keywords = animation_plan.split("Potential Key Words:")[-1].strip()
+    
+    # Update animation_plan to exclude the keywords section
+    animation_plan = animation_plan.split("Potential Key Words:")[0].strip()
 
     print("Animation Plan:")
     print(animation_plan)
 
+    print("Potential Keywords:")
+    print(potential_keywords)
+
+    #rag = RAG(persist_dir="backend/rag/knowledge_base")
+    #rag.load_vectorstore("backend/rag/knowledge_base")
+    #documentation_context = "\n".join(rag.query(text))
+    #print(f"Documentation Context: {documentation_context}")
+
     if use_claude:
-        code_prompt = get_code_prompt(text)
+        code_prompt = get_code_prompt(text, animation_plan)
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",
             max_tokens=2000,
@@ -92,7 +108,7 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
 
     return manim_code
 
-def render_manim_video(manim_code: str, max_attempts=4):
+def render_manim_video(manim_code: str, max_attempts=3):
     pro_model = genai.GenerativeModel('gemini-1.5-pro')
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
     attempt = 0

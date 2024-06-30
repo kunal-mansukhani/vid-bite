@@ -21,9 +21,11 @@ def get_plan_prompt(text: str) -> str:
 
     Begin your response with the Animation Plan.
     """
-def get_code_prompt(text: str) -> str:
+def get_code_prompt(text: str, animation_plan: str) -> str:
     return f"""
     Write manim code that visualizes the following: {text}
+    Animation Plan:
+    {animation_plan}
     Requirements:
     1. Include all necessary imports at the beginning of the file.
     2. Implement the entire animation in a single, well-structured scene class.

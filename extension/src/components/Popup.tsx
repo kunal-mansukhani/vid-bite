@@ -41,9 +41,9 @@ const Popup: React.FC = () => {
       // Chrome extension logic
       chrome.runtime.sendMessage({ action: 'generateVideo', text: inputText }, (response) => {
         setIsLoading(false);
-        if (response.videoUrl) {
-          setVideoUrl(response.videoUrl);
-          console.log('Video URL:', response.videoUrl);
+        if (response.s3VideoUrl) {
+          setVideoUrl(response.s3VideoUrl);
+          console.log('Video URL:', response.s3VideoUrl);
         } else if (response.error) {
           setError(response.error);
         }

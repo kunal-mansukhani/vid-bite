@@ -13,15 +13,7 @@ from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt
 import anthropic
-import boto3
-import os
-
-s3 = boto3.client('s3', 
-                  aws_access_key_id="AKIA2UC3EIU4QANEQKGD",
-                  aws_secret_access_key="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")
-
-BUCKET_NAME = 'an-gen'
-
+from RAG import query
 
 app = FastAPI()
 app.add_middleware(
@@ -45,16 +37,13 @@ class TextInput(BaseModel):
 @app.post("/generate_video")
 async def generate_video(input: TextInput):
     try:
-        manim_code = generate_manim_code(input.text, input.style, use_claude=False)
+        manim_code = generate_manim_code(input.text, input.style, False)
         video_path = render_manim_video(manim_code)
 
         video_url = f"http://localhost:8000/{video_path}"
 
-        s3_video_url = upload_video_to_s3(video_path)
-
         print(f"Video URL: {video_url}")
-        print(f"S3 Video URL: {s3_video_url}")
-        return JSONResponse(content={"videoUrl": video_url, "s3VideoUrl": s3_video_url})
+        return JSONResponse(content={"videoUrl": video_url})
     except Exception as e:
         print(f"Error in generate_video: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -67,28 +56,12 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
 
     plan_response = flash_model.generate_content(plan_prompt)
     animation_plan = plan_response.text.strip()
-    
-    # Parse response to find potential keywords
-    potential_keywords = ""
-    if "Potential Key Words:" in animation_plan:
-        potential_keywords = animation_plan.split("Potential Key Words:")[-1].strip()
-    
-    # Update animation_plan to exclude the keywords section
-    animation_plan = animation_plan.split("Potential Key Words:")[0].strip()
 
     print("Animation Plan:")
     print(animation_plan)
 
-    print("Potential Keywords:")
-    print(potential_keywords)
-
-    #rag = RAG(persist_dir="backend/rag/knowledge_base")
-    #rag.load_vectorstore("backend/rag/knowledge_base")
-    #documentation_context = "\n".join(rag.query(text))
-    #print(f"Documentation Context: {documentation_context}")
-
     if use_claude:
-        code_prompt = get_code_prompt(text, animation_plan)
+        code_prompt = get_code_prompt(text)
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",
             max_tokens=2000,
@@ -109,7 +82,7 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
         manim_code = message.content[0].text.strip()
     else:
         pro_model = genai.GenerativeModel('gemini-1.5-pro')
-        code_response = pro_model.generate_content(get_code_prompt(text, animation_plan))
+        code_response = pro_model.generate_content(get_code_prompt(animation_plan))
         manim_code = code_response.text.strip()
 
     manim_code = manim_code.replace("```python", "").replace("```", "")
@@ -119,7 +92,7 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
 
     return manim_code
 
-def render_manim_video(manim_code: str, max_attempts=3):
+def render_manim_video(manim_code: str, max_attempts=4):
     pro_model = genai.GenerativeModel('gemini-1.5-pro')
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
     attempt = 0
@@ -173,15 +146,6 @@ def render_manim_video(manim_code: str, max_attempts=3):
         attempt += 1
 
     raise HTTPException(status_code=500, detail="Failed to generate video after maximum attempts")
-
-def upload_video_to_s3(video_path: Path) -> str:
-    try:
-        s3.upload_file(str(video_path), BUCKET_NAME, video_path.name)
-        s3_video_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{video_path.name}"
-        return s3_video_url
-    except Exception as e:
-        print(f"Error uploading video to S3: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to upload video to S3")
 
 if __name__ == "__main__":
     import uvicorn

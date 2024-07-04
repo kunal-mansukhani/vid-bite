@@ -21,9 +21,9 @@ const Popup: React.FC = () => {
       })
       .then(response => response.json())
       .then(data => {
-        if (data.videoUrl) {
-          setVideoUrl(data.videoUrl);
-          console.log('Video URL:', data.videoUrl);
+        if (data.s3VideoUrl) {
+          setVideoUrl(data.s3VideoUrl);
+          console.log('Video URL:', data.s3VideoUrl);
         } else {
           throw new Error('Video URL not found in the response');
         }

@@ -9,61 +9,63 @@ claude = anthropic.Anthropic(api_key='sk-ant-api03-d3LXuXnSIxiisOV-lBgUc3du92DOg
 
 PIXABAY_API_KEY = '2540675-37862254858a0d195f577f35b'  # Replace with your actual Pixabay API key
 
-def fetch_clip_art(query):
+def fetch_clip_art(query: str) -> dict:
+    """Fetch clip art images from Pixabay API based on a search query.
+
+    Args:
+        query: A string representing the search term for the desired clip art.
+
+    Returns:
+        A dictionary containing:
+        - 'success': A boolean indicating whether the operation was successful.
+        - 'path': A string with the local file path of the downloaded image (if successful).
+        - 'error': A string with an error message (if unsuccessful).
+    """
     url = f"https://pixabay.com/api/?key={PIXABAY_API_KEY}&q={query}&image_type=vector&per_page=3"
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response.raise_for_status()
         data = response.json()
         
         if data['hits']:
             image_url = data['hits'][0]['webformatURL']
             image_name = f"{query.replace(' ', '_')}.jpg"
             
-            # Create the clip_art directory if it doesn't exist
             clip_art_dir = os.path.join('backend', 'assets')
             os.makedirs(clip_art_dir, exist_ok=True)
             
-            image_path = os.path.join('backend', 'assets', image_name)
+            image_path = os.path.join(clip_art_dir, image_name)
             
             with open(image_path, 'wb') as f:
                 f.write(requests.get(image_url).content)
             
-            return image_path
-    except requests.RequestException as e:
-        print(f"Error fetching clip art: {e}")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
-        print(f"Response content: {response.text}")
-    except KeyError as e:
-        print(f"Unexpected response format: {e}")
-        print(f"Response content: {data}")
-    
-    return None
+            return {"success": True, "path": image_path}
+        else:
+            return {"success": False, "error": "No images found"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
-
+    chat = flash_model.start_chat()
     plan_prompt = get_plan_prompt(text)
-    plan_response = flash_model.generate_content(plan_prompt)
-    animation_plan = plan_response.text.strip()
-
-    # Extract clip art requirements
-    clip_art_requirements = ["cat"]
-    #for line in animation_plan.split('\n'):
-        #if line.startswith("Clip Art Requirements:"):
-            #clip_art_requirements = line.split(':')[1].strip().split(',')
-            #break
-
-    # Fetch clip art images
+    plan_response = chat.send_message(plan_prompt)
+    animation_plan = plan_response.candidates[0].content.parts[0].text.strip()
+    print(f"animation plan: {animation_plan}")
+    function_calls_response = chat.send_message("Fetch all the clip arts referenced in the animation plan.", tools=[fetch_clip_art])
+    print(f"function calls: {function_calls_response}")
     clip_art_paths = []
-    for item in clip_art_requirements:
-        image_path = fetch_clip_art(item.strip())
-        print(f"image_path: {image_path}")
-        if image_path:
-            clip_art_paths.append(image_path)
-    code_prompt = get_code_prompt(text, animation_plan, clip_art_paths)
-    print(code_prompt)
+    for part in function_calls_response.candidates[0].content.parts:
+        if part.function_call:
+            fn = part.function_call
+            if fn.name == "fetch_clip_art":
+                query = fn.args['query']
+                if query != "":
+                    result = fetch_clip_art(query)
+                    if result["success"]:
+                        clip_art_paths.append(result["path"])
+    print(f"clip art paths: {clip_art_paths}")
+    code_prompt = get_code_prompt(text, animation_plan, clip_art_paths, use_claude)
     if use_claude:
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",

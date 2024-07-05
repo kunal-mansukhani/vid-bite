@@ -7,8 +7,8 @@ from fastapi import HTTPException
 import google.generativeai as genai
 from backend.constants import get_error_fixing_prompt
 
-def render_manim_video(manim_code: str, max_attempts=3):
-    flash_model = genai.GenerativeModel('gemini-1.5-flash')
+def render_manim_video(manim_code: str, max_attempts=4):
+    pro_model = genai.GenerativeModel('gemini-1.5-pro')
     attempt = 0
     while attempt < max_attempts:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
@@ -42,7 +42,7 @@ def render_manim_video(manim_code: str, max_attempts=3):
         except subprocess.CalledProcessError as e:
             if attempt < max_attempts - 1:
                 print(e.stderr)
-                fix_response = flash_model.generate_content(get_error_fixing_prompt(manim_code, e.stderr))
+                fix_response = pro_model.generate_content(get_error_fixing_prompt(manim_code, e.stderr))
                 corrected_code = fix_response.text.split("```python")[-1].split("```")[0].strip()
                 manim_code = corrected_code
                 print(f"Corrected code: {corrected_code}")

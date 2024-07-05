@@ -13,25 +13,18 @@ def get_plan_prompt(text: str) -> str:
     5. Potential technical challenges a programmer might face during implementation
     6. Proposed solutions or workarounds for each identified challenge
     7. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
-    8. If the animaton would be improved with standard clip art stock iamges, then include it in the animation plan but use them conservatively.
+    8. If the animaton would be improved with standard clip art stock iamges, then include it in the animation plan.
 
     Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Your animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
 
     Structure your response as follows:
     1. Animation Plan
     2. Technical Considerations
-    3. Clip Art Requirements
 
     Begin your response with the Animation Plan.
 
-    At the end of your response, include a section titled "Clip Art Requirements" that clearly lists all the clip art images needed for the animation. 
-    Example:
-    Clip Art Requirements: Cat,Stopsign
-    Example 2:
-    Clip[ Art Requirements: Dog,Car,Stickfigure
-    Follow this exact format for the Clip Art Requirements with comma seperated list
     """
-def get_code_prompt(text: str, animation_plan: str, asset_paths: List[str]) -> str:
+def get_code_prompt(text: str, animation_plan: str, asset_paths: List[str], is_claude: bool) -> str:
     return f"""
     Write manim code that visualizes the following: {text}
     Animation Plan:
@@ -62,10 +55,10 @@ def get_code_prompt(text: str, animation_plan: str, asset_paths: List[str]) -> s
     14. Use appropriate animation durations to allow viewers to comprehend each step.
     15. Use ImageMobject to insert assets 
     16. Use the following asset paths where appropriate in your code: {[path.replace('backend/', '') for path in asset_paths]}
-    Your response should consist solely of the Python code for Manim, without any additional explanations or comments or introductory sentence.
+    Your response should consist solely of the Python code for Manim, WITHOUT any additional explanations or comments or introductory sentence.
 
     Here are some examples of good manim animation code:
-        {EXAMPLES}
+        {CLAUDE_EXAMPLES if is_claude else EXAMPLES}
         """
     
 def get_error_fixing_prompt(code: str, error: str) -> str:
@@ -78,12 +71,52 @@ def get_error_fixing_prompt(code: str, error: str) -> str:
     Error:
     {error}
 
-    Please analyze the error and suggest potential fixes. If the error is about missing files then remove the dependency of those files from the code. Then, implement the most promising fix and provide the entire corrected code.
+    Please analyze the error and suggest potential fixes. Then, implement the most promising fix and provide the entire corrected code.
     - Include all necessary imports
     - Provide the full class definition
     - Ensure the code is complete and ready to run without any additional dependencies or libraries
-    - The code should run out-of-the-box WITHOUT additional files like external gifs or images
     """
+
+CLAUDE_EXAMPLES = """
+Example:
+from manim import *
+from manim_voiceover import VoiceoverScene
+from manim_voiceover.services.azure import AzureService
+
+
+class AzureExample(VoiceoverScene):
+    def construct(self):
+        self.set_speech_service(
+            AzureService(
+                voice="en-US-AriaNeural",
+                style="newscast-casual",
+            )
+        )
+
+        circle = Circle()
+        square = Square().shift(2 * RIGHT)
+
+        with self.voiceover(text="This circle is drawn as I speak.") as tracker:
+            self.play(Create(circle), run_time=tracker.duration)
+
+        with self.voiceover(text="Let's shift it to the left 2 units.") as tracker:
+            self.play(circle.animate.shift(2 * LEFT), run_time=tracker.duration)
+
+        with self.voiceover(text="Now, let's transform it into a square.") as tracker:
+            self.play(Transform(circle, square), run_time=tracker.duration)
+
+        with self.voiceover(
+            text="You can also change the pitch of my voice like this.",
+            prosody={"pitch": "+40Hz"},
+        ) as tracker:
+            pass
+
+        with self.voiceover(text="Thank you for watching."):
+            self.play(Uncreate(circle))
+
+        self.wait()
+
+"""
 EXAMPLES = """
 Example 1:
 from manim import *
@@ -375,8 +408,8 @@ self.play(Write(demo_code), run_time=tracker.duration)''',
 
     self.wait(5)
 
-    Example 2:
-    from manim import *
+Example 2:
+from manim import *
 from manim_voiceover import VoiceoverScene
 from manim_voiceover.services.azure import AzureService
 

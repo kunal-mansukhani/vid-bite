@@ -1,3 +1,6 @@
+from typing import List
+
+
 def get_plan_prompt(text: str) -> str:
     return f"""
     Task: Develop a comprehensive plan for a 10-30 second animation using Manim to visualize the following concept: {text}
@@ -9,19 +12,26 @@ def get_plan_prompt(text: str) -> str:
     4. Specific timing suggestions for each step and specific size and locations for each visual/text piece
     5. Potential technical challenges a programmer might face during implementation
     6. Proposed solutions or workarounds for each identified challenge
-    7. Avoid mentioning external images and files in your plan
-    8. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
-    9. Keep it to a maximum of 5 scenes.
+    7. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
+    8. If the animaton would be improved with standard clip art stock iamges, then include it in the animation plan but use them conservatively.
 
-    Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Youe animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
+    Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Your animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
 
     Structure your response as follows:
     1. Animation Plan
     2. Technical Considerations
+    3. Clip Art Requirements
 
     Begin your response with the Animation Plan.
+
+    At the end of your response, include a section titled "Clip Art Requirements" that clearly lists all the clip art images needed for the animation. 
+    Example:
+    Clip Art Requirements: Cat,Stopsign
+    Example 2:
+    Clip[ Art Requirements: Dog,Car,Stickfigure
+    Follow this exact format for the Clip Art Requirements with comma seperated list
     """
-def get_code_prompt(text: str, animation_plan: str) -> str:
+def get_code_prompt(text: str, animation_plan: str, asset_paths: List[str]) -> str:
     return f"""
     Write manim code that visualizes the following: {text}
     Animation Plan:
@@ -31,17 +41,33 @@ def get_code_prompt(text: str, animation_plan: str) -> str:
     2. Implement the entire animation in a single, well-structured scene class.
     3. Ensure the code is fully executable without any external dependencies or additional files.
     4. Avoid using external resources such as GIFs, images, or custom fonts.
-    5. Do not write any comments and keep variable names to maximum of 2 characters long
+    5. Keep variable and class names to maximum of 2 characters long
     6. Use MathTex for mathematical expressions
-    7. Optimize the code for clarity, efficiency, and adherence to Manim best practices and ensure all the text fits on the screen.
+    7. Optimize the code for clarity, efficiency, and adherence to Manim best practices.
     8. Use Manim Voiceover Azure for the voice over and ensure the voice over is synced with the animation
-    10. Make sure text doesn't overlap with each other and that it all fits on the screen
-
+    9. Carefully manage the positioning and sizing of all visual elements:
+       - Use specific coordinates (e.g., UP, DOWN, LEFT, RIGHT, or exact numerical positions) for all objects.
+       - Set appropriate scales for all objects to ensure they fit on the screen.
+       - Utilize Manim's alignment methods (e.g., next_to(), align_to(), move_to()) to position objects relative to each other.
+       - Group related objects together using VGroup when appropriate.
+    10. Prevent overlapping of text and visuals:
+       - Use arrange() method for organizing multiple objects.
+       - Implement appropriate spacing between objects (e.g., buff parameter in positioning methods).
+       - Consider using shift() to fine-tune positions if needed.
+    11. Manage text visibility and readability:
+       - Break long text into multiple lines using line breaks or separate Text objects.
+       - Adjust font size as needed to ensure text fits and is readable.
+    12. Add detailed comments explaining the positioning and sizing decisions for each visual element.
+    13. Implement smooth transitions between scenes or major visual changes to enhance clarity.
+    14. Use appropriate animation durations to allow viewers to comprehend each step.
+    15. Use ImageMobject to insert assets 
+    16. Use the following asset paths where appropriate in your code: {[path.replace('backend/', '') for path in asset_paths]}
     Your response should consist solely of the Python code for Manim, without any additional explanations or comments or introductory sentence.
 
     Here are some examples of good manim animation code:
-    {EXAMPLES}
-    """
+        {EXAMPLES}
+        """
+    
 def get_error_fixing_prompt(code: str, error: str) -> str:
     return f"""
     The following Manim code produced an error:

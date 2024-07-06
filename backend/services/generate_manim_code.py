@@ -8,12 +8,14 @@ genai.configure(api_key='AIzaSyCmf5l6rdp6UPR29W15b-6AaVrvWrA3-wU')
 claude = anthropic.Anthropic(api_key='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')
 
 PIXABAY_API_KEY = '2540675-37862254858a0d195f577f35b'  # Replace with your actual Pixabay API key
-
-def fetch_clip_art(query: str) -> dict:
-    """Fetch clip art images from Pixabay API based on a search query.
+def fetch_clip_art(query: str, colors: str = None) -> dict:
+    """Fetch clip art images from Pixabay API based on a search query and optional color filter.
 
     Args:
-        query: A string representing the search term for the desired clip art.
+        query: A string representing the search term for the desired clip art. Limited to 100 characters
+        colors: Optional. A comma-separated string of color properties to filter images.
+                Accepted values: "grayscale", "transparent", "red", "orange", "yellow", "green",
+                "turquoise", "blue", "lilac", "pink", "white", "gray", "black", "brown"
 
     Returns:
         A dictionary containing:
@@ -21,16 +23,19 @@ def fetch_clip_art(query: str) -> dict:
         - 'path': A string with the local file path of the downloaded image (if successful).
         - 'error': A string with an error message (if unsuccessful).
     """
-    url = f"https://pixabay.com/api/?key={PIXABAY_API_KEY}&q={query}&image_type=vector&per_page=3"
+    url = f"https://pixabay.com/api/?key={PIXABAY_API_KEY}&q={query.replace(' ', '+')}&image_type=all&per_page=3"
+    if colors:
+        url += f"&colors={colors}"
     try:
+        print(f"fetching clip art from {url}")
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
         
         if data['hits']:
             image_url = data['hits'][0]['webformatURL']
-            image_name = f"{query.replace(' ', '_')}.jpg"
-            
+            image_extension = os.path.splitext(image_url)[1]
+            image_name = f"{query.replace(' ', '_')}{image_extension}"
             clip_art_dir = os.path.join('backend', 'assets')
             os.makedirs(clip_art_dir, exist_ok=True)
             
@@ -44,10 +49,10 @@ def fetch_clip_art(query: str) -> dict:
             return {"success": False, "error": "No images found"}
     except Exception as e:
         return {"success": False, "error": str(e)}
-
 def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
+    pro_model = genai.GenerativeModel('gemini-1.5-pro')
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
-    chat = flash_model.start_chat()
+    chat = pro_model.start_chat()
     plan_prompt = get_plan_prompt(text)
     plan_response = chat.send_message(plan_prompt)
     animation_plan = plan_response.candidates[0].content.parts[0].text.strip()
@@ -60,10 +65,18 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
             fn = part.function_call
             if fn.name == "fetch_clip_art":
                 query = fn.args['query']
-                if query != "":
+                if 'colors' in fn.args:
+                    colors = fn.args['colors']
+                else:
+                    colors = None
+                if query == "":
+                    continue
+                if colors == "":
                     result = fetch_clip_art(query)
-                    if result["success"]:
-                        clip_art_paths.append(result["path"])
+                else:
+                    result = fetch_clip_art(query, colors)
+                if result["success"]:
+                    clip_art_paths.append(result["path"])
     print(f"clip art paths: {clip_art_paths}")
     code_prompt = get_code_prompt(text, animation_plan, clip_art_paths, use_claude)
     if use_claude:
@@ -85,6 +98,7 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
             ]
         )
         manim_code = message.content[0].text.strip()
+        print(manim_code)
     else:
         pro_model = genai.GenerativeModel('gemini-1.5-pro')
         code_response = pro_model.generate_content(code_prompt)
@@ -92,4 +106,5 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
         print(manim_code)
 
     manim_code = manim_code.replace("```python", "").replace("```", "")
+
     return manim_code

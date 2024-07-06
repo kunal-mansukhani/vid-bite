@@ -13,7 +13,7 @@ def get_plan_prompt(text: str) -> str:
     5. Potential technical challenges a programmer might face during implementation
     6. Proposed solutions or workarounds for each identified challenge
     7. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
-    8. If the animaton would be improved with standard clip art stock iamges, then include it in the animation plan.
+    8. If standard clip art images could help the animation be more clear, then include them and then only if essential, specify what colors you want the clip art to be, otherwise don't mention color. 
 
     Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Your animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
 
@@ -54,8 +54,8 @@ def get_code_prompt(text: str, animation_plan: str, asset_paths: List[str], is_c
     13. Implement smooth transitions between scenes or major visual changes to enhance clarity.
     14. Use appropriate animation durations to allow viewers to comprehend each step.
     15. Use ImageMobject to insert assets 
-    16. Use the following asset paths where appropriate in your code: {[path.replace('backend/', '') for path in asset_paths]}
-    Your response should consist solely of the Python code for Manim, WITHOUT any additional explanations or comments or introductory sentence.
+    16. Use the following asset paths where specified in the animation plan in your code: {[path.replace('backend/', '') for path in asset_paths]}
+    Your response should consist solely of the Python code for Manim, WITHOUT any additional explanations or comments or introductory sentence. Output only code!
 
     Here are some examples of good manim animation code:
         {CLAUDE_EXAMPLES if is_claude else EXAMPLES}
@@ -75,6 +75,7 @@ def get_error_fixing_prompt(code: str, error: str) -> str:
     - Include all necessary imports
     - Provide the full class definition
     - Ensure the code is complete and ready to run without any additional dependencies or libraries
+    - PROVIDE THE FULL CORRECTED CODE. ENSURE IT IS READY TO RUN OUT OF THE BOX
     """
 
 CLAUDE_EXAMPLES = """

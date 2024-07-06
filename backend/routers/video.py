@@ -9,7 +9,7 @@ router = APIRouter()
 @router.post("/generate_video")
 async def generate_video(input: TextInput):
     try:
-        manim_code = generate_manim_code(input.text, input.style, input.use_claude)
+        manim_code = generate_manim_code(input.text, input.style, True)
         video_path = render_manim_video(manim_code)
         video_url = f"http://localhost:8000/{str(video_path).replace('backend/', '', 1)}"
 

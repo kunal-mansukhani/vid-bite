@@ -1,3 +1,6 @@
+from typing import List
+
+
 def get_plan_prompt(text: str) -> str:
     return f"""
     Task: Develop a comprehensive plan for a 10-30 second animation using Manim to visualize the following concept: {text}
@@ -9,19 +12,20 @@ def get_plan_prompt(text: str) -> str:
     4. Specific timing suggestions for each step and specific size and locations for each visual/text piece
     5. Potential technical challenges a programmer might face during implementation
     6. Proposed solutions or workarounds for each identified challenge
-    7. Avoid mentioning external images and files in your plan
-    8. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
-    9. Keep it to a maximum of 5 scenes.
+    7. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
+    8. If standard clip art images could help the animation be more clear, then include them and then only if essential, specify what colors you want the clip art to be, otherwise don't mention color. 
 
-    Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Youe animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
+    Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Your animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. 
 
     Structure your response as follows:
     1. Animation Plan
     2. Technical Considerations
 
     Begin your response with the Animation Plan.
+
     """
-def get_code_prompt(text: str, animation_plan: str, rag_context: str) -> str:
+
+def get_code_prompt(text: str, animation_plan: str, rag_context: str, asset_paths: List[str], is_claude: bool) -> str:
     return f"""
 
     Relevant Documentation Context:
@@ -37,17 +41,33 @@ def get_code_prompt(text: str, animation_plan: str, rag_context: str) -> str:
     2. Implement the entire animation in a single, well-structured scene class.
     3. Ensure the code is fully executable without any external dependencies or additional files.
     4. Avoid using external resources such as GIFs, images, or custom fonts.
-    5. Do not write any comments and keep variable names to maximum of 2 characters long
+    5. Keep variable and class names to maximum of 2 characters long
     6. Use MathTex for mathematical expressions
-    7. Optimize the code for clarity, efficiency, and adherence to Manim best practices and ensure all the text fits on the screen.
+    7. Optimize the code for clarity, efficiency, and adherence to Manim best practices.
     8. Use Manim Voiceover Azure for the voice over and ensure the voice over is synced with the animation
-    10. Make sure text doesn't overlap with each other and that it all fits on the screen
-
-    Your response should consist solely of the Python code for Manim, without any additional explanations or comments or introductory sentence.
+    9. Carefully manage the positioning and sizing of all visual elements:
+       - Use specific coordinates (e.g., UP, DOWN, LEFT, RIGHT, or exact numerical positions) for all objects.
+       - Set appropriate scales for all objects to ensure they fit on the screen.
+       - Utilize Manim's alignment methods (e.g., next_to(), align_to(), move_to()) to position objects relative to each other.
+       - Group related objects together using VGroup when appropriate.
+    10. Prevent overlapping of text and visuals:
+       - Use arrange() method for organizing multiple objects.
+       - Implement appropriate spacing between objects (e.g., buff parameter in positioning methods).
+       - Consider using shift() to fine-tune positions if needed.
+    11. Manage text visibility and readability:
+       - Break long text into multiple lines using line breaks or separate Text objects.
+       - Adjust font size as needed to ensure text fits and is readable.
+    12. Add detailed comments explaining the positioning and sizing decisions for each visual element.
+    13. Implement smooth transitions between scenes or major visual changes to enhance clarity.
+    14. Use appropriate animation durations to allow viewers to comprehend each step.
+    15. Use ImageMobject to insert assets 
+    16. Use the following asset paths where specified in the animation plan in your code: {[path.replace('backend/', '') for path in asset_paths]}
+    Your response should consist solely of the Python code for Manim, WITHOUT any additional explanations or comments or introductory sentence. Output only code!
 
     Here are some examples of good manim animation code:
-    {EXAMPLES}
-    """
+        {CLAUDE_EXAMPLES if is_claude else EXAMPLES}
+        """
+    
 def get_error_fixing_prompt(code: str, error: str) -> str:
     return f"""
     The following Manim code produced an error:
@@ -58,12 +78,53 @@ def get_error_fixing_prompt(code: str, error: str) -> str:
     Error:
     {error}
 
-    Please analyze the error and suggest potential fixes. If the error is about missing files then remove the dependency of those files from the code. Then, implement the most promising fix and provide the entire corrected code.
+    Please analyze the error and suggest potential fixes. Then, implement the most promising fix and provide the entire corrected code.
     - Include all necessary imports
     - Provide the full class definition
     - Ensure the code is complete and ready to run without any additional dependencies or libraries
-    - The code should run out-of-the-box WITHOUT additional files like external gifs or images
+    - PROVIDE THE FULL CORRECTED CODE. ENSURE IT IS READY TO RUN OUT OF THE BOX
     """
+
+CLAUDE_EXAMPLES = """
+Example:
+from manim import *
+from manim_voiceover import VoiceoverScene
+from manim_voiceover.services.azure import AzureService
+
+
+class AzureExample(VoiceoverScene):
+    def construct(self):
+        self.set_speech_service(
+            AzureService(
+                voice="en-US-AriaNeural",
+                style="newscast-casual",
+            )
+        )
+
+        circle = Circle()
+        square = Square().shift(2 * RIGHT)
+
+        with self.voiceover(text="This circle is drawn as I speak.") as tracker:
+            self.play(Create(circle), run_time=tracker.duration)
+
+        with self.voiceover(text="Let's shift it to the left 2 units.") as tracker:
+            self.play(circle.animate.shift(2 * LEFT), run_time=tracker.duration)
+
+        with self.voiceover(text="Now, let's transform it into a square.") as tracker:
+            self.play(Transform(circle, square), run_time=tracker.duration)
+
+        with self.voiceover(
+            text="You can also change the pitch of my voice like this.",
+            prosody={"pitch": "+40Hz"},
+        ) as tracker:
+            pass
+
+        with self.voiceover(text="Thank you for watching."):
+            self.play(Uncreate(circle))
+
+        self.wait()
+
+"""
 EXAMPLES = """
 Example 1:
 from manim import *
@@ -355,8 +416,8 @@ self.play(Write(demo_code), run_time=tracker.duration)''',
 
     self.wait(5)
 
-    Example 2:
-    from manim import *
+Example 2:
+from manim import *
 from manim_voiceover import VoiceoverScene
 from manim_voiceover.services.azure import AzureService
 

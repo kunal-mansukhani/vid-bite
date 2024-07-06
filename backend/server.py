@@ -16,6 +16,8 @@ import anthropic
 import boto3
 import os
 
+from RAG.RAG import RAG
+
 s3 = boto3.client('s3', 
                   aws_access_key_id="AKIA2UC3EIU4QANEQKGD",
                   aws_secret_access_key="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")
@@ -42,10 +44,19 @@ class TextInput(BaseModel):
     style: Optional[str] = "default"
     use_claude: Optional[bool] = False
 
+@app.post("/generate_code")
+async def generate_code(input: TextInput):
+    try:
+        manim_code = generate_manim_code(input.text, input.use_claude)
+        return JSONResponse(content={"code": manim_code})
+    except Exception as e:
+        print(f"Error in generate_code: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/generate_video")
 async def generate_video(input: TextInput):
     try:
-        manim_code = generate_manim_code(input.text, input.style, use_claude=False)
+        manim_code = generate_manim_code(input.text, use_claude=False)
         video_path = render_manim_video(manim_code)
 
         video_url = f"http://localhost:8000/{video_path}"
@@ -59,7 +70,7 @@ async def generate_video(input: TextInput):
         print(f"Error in generate_video: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
+def generate_manim_code(text: str, use_claude: bool, use_context:bool = True) -> str:
     # Use Gemini 1.5 Flash to generate the animation plan
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -86,9 +97,10 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     #rag.load_vectorstore("backend/rag/knowledge_base")
     #documentation_context = "\n".join(rag.query(text))
     #print(f"Documentation Context: {documentation_context}")
+    context = get_prompt_context(text) if use_context else ""
+    code_prompt = get_code_prompt(text, animation_plan, context)
 
     if use_claude:
-        code_prompt = get_code_prompt(text, animation_plan)
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",
             max_tokens=2000,
@@ -109,7 +121,7 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
         manim_code = message.content[0].text.strip()
     else:
         pro_model = genai.GenerativeModel('gemini-1.5-pro')
-        code_response = pro_model.generate_content(get_code_prompt(text, animation_plan))
+        code_response = pro_model.generate_content(code_prompt)
         manim_code = code_response.text.strip()
 
     manim_code = manim_code.replace("```python", "").replace("```", "")
@@ -182,6 +194,15 @@ def upload_video_to_s3(video_path: Path) -> str:
     except Exception as e:
         print(f"Error uploading video to S3: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to upload video to S3")
+
+def get_prompt_context(text: str):
+    rag = RAG(persist_dir="RAG/knowledge_base")
+    rag.load_vectorstore("RAG/knowledge_base")
+
+    context = rag.query(text)
+    print(f"Context of the prompt:\n{context}")
+
+    return context
 
 if __name__ == "__main__":
     import uvicorn

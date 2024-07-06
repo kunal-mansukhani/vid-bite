@@ -17,3 +17,13 @@ async def generate_video(input: TextInput):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
+    
+# This is purely for RAG testing purposes
+@router.post("/generate_code")
+async def generate_code(input: TextInput):
+    try:
+        manim_code = generate_manim_code(input.text, input.style, True)
+        return JSONResponse(content={"code": manim_code})
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))

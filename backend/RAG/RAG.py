@@ -1,7 +1,7 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
-from .scraper.scraper import scrape_docs
-from .scraper.utils import save_documents, load_documents
+from backend.RAG.scraper.scraper import scrape_docs
+from backend.RAG.scraper.utils import save_documents, load_documents
 import time
 
 class RAG:

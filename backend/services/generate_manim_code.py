@@ -4,6 +4,9 @@ import requests
 import os
 from backend.constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt
 import json
+
+from backend.RAG.RAG import RAG
+
 genai.configure(api_key='AIzaSyCmf5l6rdp6UPR29W15b-6AaVrvWrA3-wU')
 claude = anthropic.Anthropic(api_key='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')
 
@@ -78,7 +81,11 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
                 if result["success"]:
                     clip_art_paths.append(result["path"])
     print(f"clip art paths: {clip_art_paths}")
-    code_prompt = get_code_prompt(text, animation_plan, clip_art_paths, use_claude)
+
+    code_context = fetch_context(text, top_k=5)
+
+    print(f"code context: \n {code_context} \n\n")
+    code_prompt = get_code_prompt(text, animation_plan, code_context, clip_art_paths, use_claude)
     if use_claude:
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",
@@ -108,3 +115,10 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     manim_code = manim_code.replace("```python", "").replace("```", "")
 
     return manim_code
+
+def fetch_context(text: str, top_k: int = 5):
+    rag = RAG(persist_dir="backend/RAG/knowledge_base")
+    rag.load_vectorstore("backend/RAG/knowledge_base")
+    context = rag.query(text, top_k)
+    return context
+

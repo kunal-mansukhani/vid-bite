@@ -25,17 +25,51 @@ def get_plan_prompt(text: str) -> str:
 
     """
 
-def get_code_prompt(text: str, animation_plan: str, rag_context: str, asset_paths: List[str], is_claude: bool) -> str:
+def get_relevant_examples_prompt(concept: str) -> str:
+    import os
+
+    examples = [f"{i+1}. {file}" for i, file in enumerate(sorted(f for f in os.listdir("backend/examples") if f.endswith(".py")))]
+    examples_list = "\n".join(examples)
+    return f"""
+    Task: Analyze the concept "{concept}" and determine the top 5 most applicable Manim examples from the backend/examples directory for visualizing this concept.
+
+    Here is a list of available example files:
+    {examples_list}
+
+    Please provide:
+    1. A list of the top 5 most relevant example files from the backend/examples directory.
+    2. A brief explanation (1-2 sentences) for each chosen example, describing why it's applicable to visualizing the given concept.
+    3. Any specific elements or techniques from these examples that could be particularly useful for this visualization.
+
+    Your response should be structured as follows:
+    1. [Example file name 1]
+       - Explanation of relevance
+       - Key elements or techniques
+
+    2. [Example file name 2]
+       - Explanation of relevance
+       - Key elements or techniques
+
+    ... and so on for the top 5 examples.
+
+    Base your recommendations on the file names and their potential relevance to the concept, considering various Manim features and visualization techniques that might be useful for the given concept. At the end of your response output the list of examples in the following format:
+
+    Output: file_1, file_2, file_3, file_4, file_5
+    Example: matrix, regular_polygon, polyhedra, polygon, move_to_target
+
+    Do not use markdown for the output.
+    """
+
+
+
+def get_code_prompt(text: str,  rag_context: str, asset_paths: List[str], is_claude: bool) -> str:
     return f"""
 
-    Relevant Documentation Context:
+    Relevant Examples Context:
     {rag_context}
 
-    Please respond to the following user query; use the above context if it is helpful: {text} \n
-
-    Animation Plan:
-    {animation_plan}
-    
+    Please visualize the following user query using a manim animation video; use the above context if it is helpful: {text} \n
+    Think step-by-step
     Requirements:
     1. Include all necessary imports at the beginning of the file.
     2. Implement the entire animation in a single, well-structured scene class.
@@ -62,7 +96,6 @@ def get_code_prompt(text: str, animation_plan: str, rag_context: str, asset_path
     14. Use appropriate animation durations to allow viewers to comprehend each step.
     15. Use ImageMobject to insert assets 
     16. Use the following asset paths where specified in the animation plan in your code: {[path.replace('backend/', '') for path in asset_paths]}
-    Your response should consist solely of the Python code for Manim, WITHOUT any additional explanations or comments or introductory sentence. Output only code!
 
     Here are some examples of good manim animation code:
         {CLAUDE_EXAMPLES if is_claude else EXAMPLES}

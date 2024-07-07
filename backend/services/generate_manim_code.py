@@ -2,7 +2,7 @@ import google.generativeai as genai
 import anthropic
 import requests
 import os
-from backend.constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt
+from backend.constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt, get_relevant_examples_prompt
 import json
 import time
 
@@ -56,38 +56,44 @@ def fetch_clip_art(query: str, colors: str = None) -> dict:
 def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     pro_model = genai.GenerativeModel('gemini-1.5-pro')
     flash_model = genai.GenerativeModel('gemini-1.5-flash')
-    chat = pro_model.start_chat()
-    plan_prompt = get_plan_prompt(text)
-    plan_response = chat.send_message(plan_prompt)
-    animation_plan = plan_response.candidates[0].content.parts[0].text.strip()
-    print(f"animation plan: {animation_plan}")
-    function_calls_response = chat.send_message("Fetch all the clip arts referenced in the animation plan.", tools=[fetch_clip_art])
-    print(f"function calls: {function_calls_response}")
+    #chat = pro_model.start_chat()
+    #plan_prompt = get_plan_prompt(text)
+    #plan_response = chat.send_message(plan_prompt)
+    #animation_plan = plan_response.candidates[0].content.parts[0].text.strip()
+    #print(f"animation plan: {animation_plan}")
+    #function_calls_response = chat.send_message("Fetch all the clip arts referenced in the animation plan.", tools=[fetch_clip_art])
+    #print(f"function calls: {function_calls_response}")
     clip_art_paths = []
-    for part in function_calls_response.candidates[0].content.parts:
-        if part.function_call:
-            fn = part.function_call
-            if fn.name == "fetch_clip_art":
-                query = fn.args['query']
-                if 'colors' in fn.args:
-                    colors = fn.args['colors']
-                else:
-                    colors = None
-                if query == "":
-                    continue
-                if colors == "":
-                    result = fetch_clip_art(query)
-                else:
-                    result = fetch_clip_art(query, colors)
-                if result["success"]:
-                    clip_art_paths.append(result["path"])
-    print(f"clip art paths: {clip_art_paths}")
+    #for part in function_calls_response.candidates[0].content.parts:
+    #    if part.function_call:
+    #        fn = part.function_call
+    #        if fn.name == "fetch_clip_art":
+    #            query = fn.args['query']
+    #            if 'colors' in fn.args:
+    #                colors = fn.args['colors']
+    #            else:
+    #                colors = None
+    #            if query == "":
+    #                continue
+    #            if colors == "":
+    #                result = fetch_clip_art(query)
+    #            else:
+    #                result = fetch_clip_art(query, colors)
+    #            if result["success"]:
+    #                clip_art_paths.append(result["path"])
+    #print(f"clip art paths: {clip_art_paths}")
+    relevant_examples_prompt = get_relevant_examples_prompt(text)
+    print(f"relevant examples prompt: {relevant_examples_prompt}")
+    relevant_examples = flash_model.generate_content(relevant_examples_prompt).text.strip().split("Output:")[1].strip().split(', ')
+    print(f"relevant examples: {relevant_examples}")
+    code_context = []
+    for example in relevant_examples:
+        code_context.append(fetch_context(example))
     start = time.time()
-    code_context = fetch_context(text, top_k=5)
     end = time.time()
     print(f"time taken: {end - start}")
     print(f"code context: \n {code_context} \n\n")
-    code_prompt = get_code_prompt(text, animation_plan, code_context, clip_art_paths, use_claude)
+    code_prompt = get_code_prompt(text, code_context, clip_art_paths, use_claude)
     if use_claude:
         message = claude.messages.create(
             model="claude-3-5-sonnet-20240620",
@@ -106,7 +112,13 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
                 }
             ]
         )
-        manim_code = message.content[0].text.strip()
+        full_content = message.content[0].text
+        start_index = full_content.find("```python")
+        end_index = full_content.rfind("```")
+        if start_index != -1 and end_index != -1:
+            manim_code = full_content[start_index + len("```python"):end_index].strip()
+        else:
+            manim_code = full_content.strip()
         print(manim_code)
     else:
         pro_model = genai.GenerativeModel('gemini-1.5-pro')
@@ -119,8 +131,8 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
     return manim_code
 
 def fetch_context(text: str, top_k: int = 5):
-    rag = RAG(persist_dir="backend/RAG/knowledge_base")
-    rag.load_vectorstore("backend/RAG/knowledge_base")
+    rag = RAG(persist_dir="backend/RAG/examples_base")
+    rag.load_vectorstore("backend/RAG/examples_base")
     context = rag.query(text, top_k)
     return context
 

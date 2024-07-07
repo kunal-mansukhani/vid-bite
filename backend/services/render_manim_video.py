@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import HTTPException
 import google.generativeai as genai
 from backend.constants import get_error_fixing_prompt
+from backend.rag.RAG import RAG
 
 def render_manim_video(manim_code: str, max_attempts=4):
     pro_model = genai.GenerativeModel('gemini-1.5-pro')
@@ -28,9 +29,7 @@ def render_manim_video(manim_code: str, max_attempts=4):
                                     capture_output=True, 
                                     text=True,
                                     cwd='backend')
-            print(result.stdout)
-            print(result.stderr)
-            
+
             video_dir = Path("backend/media") / "videos" / Path(temp_file_path).stem / "720p30"
             video_files = list(video_dir.glob("*.mp4"))
             if video_files:
@@ -41,8 +40,12 @@ def render_manim_video(manim_code: str, max_attempts=4):
 
         except subprocess.CalledProcessError as e:
             if attempt < max_attempts - 1:
-                print(e.stderr)
-                fix_response = pro_model.generate_content(get_error_fixing_prompt(manim_code, e.stderr))
+                error_lines = e.stderr.strip().split('\n')
+                final_error = error_lines[-1] if error_lines else str(e)
+                print(final_error)
+                documentation_context = fetch_context(final_error)
+                print(documentation_context)
+                fix_response = pro_model.generate_content(get_error_fixing_prompt(manim_code, e.stderr) + f"\n\nAdditional context that may be helpful: {documentation_context}")
                 corrected_code = fix_response.text.split("```python")[-1].split("```")[0].strip()
                 manim_code = corrected_code
                 print(f"Corrected code: {corrected_code}")
@@ -58,3 +61,9 @@ def render_manim_video(manim_code: str, max_attempts=4):
         attempt += 1
 
     raise HTTPException(status_code=500, detail="Failed to generate video after maximum attempts")
+
+def fetch_context(text: str, top_k: int = 5):
+    rag = RAG(persist_dir="backend/RAG/knowledge_base")
+    rag.load_vectorstore("backend/RAG/knowledge_base")
+    context = rag.query(text, top_k)
+    return context

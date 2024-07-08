@@ -45,7 +45,7 @@ def render_manim_video(manim_code: str, max_attempts=4):
                 print(final_error)
                 documentation_context = fetch_context(final_error)
                 print(documentation_context)
-                fix_response = pro_model.generate_content(get_error_fixing_prompt(manim_code, e.stderr) + f"\n\nAdditional context that may be helpful: {documentation_context}")
+                fix_response = pro_model.generate_content(get_error_fixing_prompt(manim_code, e.stdout + '\n' + e.stderr) + f"\n\nAdditional documentation context that may be helpful: {documentation_context}")
                 corrected_code = fix_response.text.split("```python")[-1].split("```")[0].strip()
                 manim_code = corrected_code
                 print(f"Corrected code: {corrected_code}")

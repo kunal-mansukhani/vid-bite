@@ -1,5 +1,7 @@
 from typing import List
-
+from pathlib import Path
+import importlib
+import inspect
 
 def get_plan_prompt(text: str) -> str:
     return f"""
@@ -26,18 +28,22 @@ def get_plan_prompt(text: str) -> str:
     """
 
 def get_relevant_examples_prompt(concept: str) -> str:
-    import os
+    examples_list: List[str] = []
 
-    examples = [f"{i+1}. {file}" for i, file in enumerate(sorted(f for f in os.listdir("backend/examples") if f.endswith(".py")))]
-    examples_list = "\n".join(examples)
+    for file in Path('backend/examples').glob('*.py'):
+        with open(file, 'r') as f:
+            content = f.read()
+            class_names = [line.split('class ')[1].split('(')[0].strip() for line in content.split('\n') if line.strip().startswith('class ')]
+            examples_list.extend(class_names)
+
     return f"""
     Task: Analyze the concept "{concept}" and determine the top 5 most applicable Manim examples from the backend/examples directory for visualizing this concept.
 
-    Here is a list of available example files:
+    Here is a list of available examples:
     {examples_list}
 
     Please provide:
-    1. A list of the top 5 most relevant example files from the backend/examples directory.
+    1. A list of the top 3 most relevant example files from the backend/examples directory.
     2. A brief explanation (1-2 sentences) for each chosen example, describing why it's applicable to visualizing the given concept.
     3. Any specific elements or techniques from these examples that could be particularly useful for this visualization.
 
@@ -50,13 +56,12 @@ def get_relevant_examples_prompt(concept: str) -> str:
        - Explanation of relevance
        - Key elements or techniques
 
-    ... and so on for the top 5 examples.
+    ... and so on for the top 3 examples.
 
     Base your recommendations on the file names and their potential relevance to the concept, considering various Manim features and visualization techniques that might be useful for the given concept. At the end of your response output the list of examples in the following format:
 
-    Output: file_1, file_2, file_3, file_4, file_5
-    Example: matrix, regular_polygon, polyhedra, polygon, move_to_target
-
+    Output: class_name, class_name, class_name
+    Example: Matrix, RegularPolygon, Polyhedra    
     Do not use markdown for the output.
     """
 
@@ -68,7 +73,7 @@ def get_code_prompt(text: str,  rag_context: str, asset_paths: List[str], is_cla
     Relevant Examples Context:
     {rag_context}
 
-    Please visualize the following user query using a manim animation video; use the above context if it is helpful: {text} \n
+    Please visualize the following user query using a manim animation video; you MUST use the above context somewhere in your code: {text} \n
     Think step-by-step
     Requirements:
     1. Include all necessary imports at the beginning of the file.
@@ -487,3 +492,4 @@ class AzureExample(VoiceoverScene):
 
         self.wait()
 """
+

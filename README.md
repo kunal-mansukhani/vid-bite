@@ -34,12 +34,16 @@ https://github.com/kunal-mansukhani/vid-bite/assets/66945981/14756d7c-c069-419e-
 
 ## 🛠️ Usage (Development)
 To use VidBite:
+1. 
+Install [Manim dependencies](https://docs.manim.community/en/stable/installation.html)
 
-1. Run the server:
+
+2. Run the server:
     ```bash
+    pip install -r requirements.txt
     python3 -m backend.server
     ```
-2. Run the frontend:
+3. Run the frontend:
     ```bash
     cd extension
     npm install

@@ -25,12 +25,9 @@ Inspired by the educational style of 3Blue1Brown's videos, VidBite aims to revol
 
 Users input their mathematical or scientific concepts into the application, which then utilizes powerful AI models to generate corresponding Manim code. This code can be further customized and is ready to be rendered into high-quality animations.
 
-<video width="640" height="360" controls>
-  <source src=".github/Demo_ChatGPT.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+Here's an example video that vidbyte generated for the query "CPU Pipelining":
 
-
+https://github.com/kunal-mansukhani/vid-bite/assets/66945981/14756d7c-c069-419e-b967-3829f54453ed
 
 ## Usage (Development)
 To use VidBite:

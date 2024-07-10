@@ -10,7 +10,8 @@
   🤖 Claude Sonnet 3.5 powered generative videos. Concept. 
 </p>
 
-![Preview](./.github/Frontend.jpeg)
+<img width="1087" alt="Screenshot 2024-07-10 at 11 32 59 PM" src="https://github.com/kunal-mansukhani/vid-bite/assets/66945981/4220d704-91bb-4e54-8080-fcdfca3c3d8c">
+
 
 <!-- ## Table of Contents
 - [Concept](#concept)
@@ -28,6 +29,9 @@ Here's an example video that VidBite generated for the query "CPU Pipelining":
 
 https://github.com/kunal-mansukhani/vid-bite/assets/66945981/14756d7c-c069-419e-b967-3829f54453ed
 
+## 🏛️ System Architecture
+<img width="750" alt="Screenshot 2024-07-10 at 11 30 52 PM" src="https://github.com/kunal-mansukhani/vid-bite/assets/66945981/c8110246-3650-49a9-9da9-c051f947f929">
+
 ## 🛠️ Usage (Development)
 To use VidBite:
 
@@ -41,6 +45,7 @@ To use VidBite:
     npm install
     npm start
     ```
+
 
 ## Models Used
 | Model                       | Description                                                                 | Status  |

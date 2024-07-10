@@ -1,15 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Your Extension Name",
+  "name": "VidBite",
   "version": "1.0",
-  "description": "Your extension description",
+  "description": "Visualize Anything, Anywhere.",
   "action": {
     "default_popup": "index.html",
     "default_title": "Open the popup"
   },
   "permissions": [
-    "activeTab",
-    "file://*"
+    "activeTab"
   ],
   "background": {
     "service_worker": "static/js/background.js"

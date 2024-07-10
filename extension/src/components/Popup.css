@@ -4,11 +4,10 @@
 body, html {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
+    width: 350px;
+    height: 500px;
     background-color: black;
 }
-
 
 .popup-container {
     background-color: black;
@@ -16,34 +15,35 @@ body, html {
     font-family: "Poppins", sans-serif;
     font-weight: 700;
     font-style: normal;
-    padding: 20px;
+    padding: 15px;
     text-align: center;
-    min-height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-  }
-  
-  .form-container {
-    width: 80%;
-    max-width: 600px;
+    overflow-y: auto;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 320px;
     margin: 0 auto;
-  }
-  
-  .ai_inputWr {
+}
+
+.ai_inputWr {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
+    margin: 10px auto;
     padding: 5px;
     background: black;
     border-radius: 16px;
     box-shadow: 0 0 15px rgba(93, 12, 255, 0.3), 0 0 10px rgba(155, 81, 224, 0.3);
-  }
-  
-  .ai_inputWr:before {
+}
+
+.ai_inputWr:before {
     content: "";
     position: absolute;
     inset: -3px;
@@ -51,48 +51,59 @@ body, html {
     background-image: linear-gradient(var(--rotate), #4b2fa4, #c18fff 43%, #33a9ff);
     z-index: -1;
     animation: ai_spin 5s linear infinite;
-  }
-  
-  @keyframes ai_spin {
+}
+
+@keyframes ai_spin {
     to {
-      --rotate: 360deg;
+        --rotate: 360deg;
     }
-  }
-  
-  .ai_placeholder {
+}
+
+.ai_placeholder {
     display: none;
-  }
-  
-  input[name="promptInput"] {
+}
+
+input[name="promptInput"] {
     background: transparent;
     border: none;
     color: white;
-    font-size: 16px;
-    padding: 10px;
+    font-size: 14px;
+    padding: 8px;
     outline: none;
     flex: 1;
-  }
-  
-  button {
+    width: calc(100% - 16px);
+}
+
+button {
     background-color: #6d28d9;
     border: none;
     border-radius: 12px;
     color: white;
-    font-size: 16px;
-    padding: 10px 20px;
+    font-size: 14px;
+    padding: 8px 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     transition: background-color 0.3s ease;
-  }
-  
-  button:disabled {
+}
+
+button:disabled {
     background-color: #4a148c;
     cursor: not-allowed;
-  }
-  
-  button:hover:enabled {
+}
+
+button:hover:enabled {
     background-color: #7c3aed;
-  }
-  
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+video {
+    max-width: 100%;
+    margin-top: 10px;
+    border-radius: 8px;
+}

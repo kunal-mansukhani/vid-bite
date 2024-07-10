@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Popup.css';
 
 const Popup: React.FC = () => {
@@ -7,51 +7,35 @@ const Popup: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handleMessage = (request: any) => {
+      if (request.action === 'setSelectedText') {
+        setInputText(request.text);
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage);
+    };
+  }, []);
+
   const handleGenerateVideo = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
     setVideoUrl(null);
 
-    const generateVideo = (text: string) => {
-      return fetch('http://localhost:8000/generate_video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text, style: "default" }),
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.s3VideoUrl) {
-          setVideoUrl(data.s3VideoUrl);
-          console.log('Video URL:', data.s3VideoUrl);
-        } else {
-          throw new Error('Video URL not found in the response');
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        setError('Failed to generate video');
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-    };
-
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime.sendMessage({ action: 'generateVideo', text: inputText }, (response) => {
-        setIsLoading(false);
-        if (response.s3VideoUrl) {
-          setVideoUrl(response.s3VideoUrl);
-          console.log('Video URL:', response.s3VideoUrl);
-        } else if (response.error) {
-          setError(response.error);
-        }
-      });
-    } else {
-      generateVideo(inputText);
-    }
+    chrome.runtime.sendMessage({ action: 'generateVideo', text: inputText }, (response) => {
+      setIsLoading(false);
+      if (response.s3VideoUrl) {
+        setVideoUrl(response.s3VideoUrl);
+        console.log('Video URL:', response.s3VideoUrl);
+      } else if (response.error) {
+        setError(response.error);
+      }
+    });
   };
 
   return (

@@ -28,7 +28,7 @@ Here's an example video that VidBite generated for the query "CPU Pipelining":
 
 https://github.com/kunal-mansukhani/vid-bite/assets/66945981/14756d7c-c069-419e-b967-3829f54453ed
 
-## Usage (Development)
+## 🛠️ Usage (Development)
 To use VidBite:
 
 1. Run the server:

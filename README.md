@@ -50,7 +50,7 @@ To use VidBite:
 | Model                       | Description                                                                 | Status  |
 |-----------------------------|-----------------------------------------------------------------------------|---------|
 | Claude 3.5 Sonnet (Paid)    | Powerful language model for generating precise Manim code with enhanced performance and latest features.  | ✅      |
-| Google Gemini (Unpaid)      | Efficient language model for generating Manim code, complementing Claude 3.5 Sonnet with versatile functionality. | ✅      |
+
 
 
 

@@ -1,10 +1,12 @@
+from typing import List
 import google.generativeai as genai
 import anthropic
 import requests
 import os
-from backend.constants import get_plan_prompt, get_code_prompt, get_error_fixing_prompt, get_relevant_examples_prompt
+from backend.constants import get_code_prompt, get_relevant_examples_prompt, get_clip_art_prompt
 import json
 import time
+from pathlib import Path
 
 from backend.RAG.RAG import RAG
 
@@ -53,53 +55,104 @@ def fetch_clip_art(query: str, colors: str = None) -> dict:
             return {"success": False, "error": "No images found"}
     except Exception as e:
         return {"success": False, "error": str(e)}
-def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
-    pro_model = genai.GenerativeModel('gemini-1.5-pro')
-    flash_model = genai.GenerativeModel('gemini-1.5-flash')
-    #chat = pro_model.start_chat()
-    #plan_prompt = get_plan_prompt(text)
-    #plan_response = chat.send_message(plan_prompt)
-    #animation_plan = plan_response.candidates[0].content.parts[0].text.strip()
-    #print(f"animation plan: {animation_plan}")
-    #function_calls_response = chat.send_message("Fetch all the clip arts referenced in the animation plan.", tools=[fetch_clip_art])
-    #print(f"function calls: {function_calls_response}")
-    clip_art_paths = []
-    #for part in function_calls_response.candidates[0].content.parts:
-    #    if part.function_call:
-    #        fn = part.function_call
-    #        if fn.name == "fetch_clip_art":
-    #            query = fn.args['query']
-    #            if 'colors' in fn.args:
-    #                colors = fn.args['colors']
-    #            else:
-    #                colors = None
-    #            if query == "":
-    #                continue
-    #            if colors == "":
-    #                result = fetch_clip_art(query)
-    #            else:
-    #                result = fetch_clip_art(query, colors)
-    #            if result["success"]:
-    #                clip_art_paths.append(result["path"])
-    #print(f"clip art paths: {clip_art_paths}")
-    relevant_examples_prompt = get_relevant_examples_prompt(text)
-    print(f"relevant examples prompt: {relevant_examples_prompt}")
-    relevant_examples = flash_model.generate_content(relevant_examples_prompt).text.strip().split("Output:")[1].strip().split(', ')
-    print(f"relevant examples: {relevant_examples}")
+    
+
+
+def generate_manim_code(text: str) -> str:
+    examples_list: List[str] = []
+
+    for file in Path('backend/examples').glob('*.py'):
+        with open(file, 'r') as f:
+            content = f.read()
+            class_names = [line.split('class ')[1].split('(')[0].strip() for line in content.split('\n') if line.strip().startswith('class ')]
+            examples_list.extend(class_names)
+
+    message = claude.messages.create(
+        model="claude-3-haiku-20240307",
+        max_tokens=1500,
+        temperature=1,
+        system="You are an expert and knowledgeable teacher and Manim programmer. You excel at visualizing concepts in a way that is easy to understand and easy to implement in Manim.",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": get_relevant_examples_prompt(examples_list, text)
+                    }
+                ]
+            }
+        ]
+    )
+    animation_plan = message.content[0].text
+    print(f"animation plan: \n {animation_plan} \n\n")
+    
+    message = claude.messages.create(
+        model="claude-3-haiku-20240307",
+        tools=[
+            {
+                "name": "fetch_clip_art",
+                "description": "Fetch clip art images from Pixabay API based on a search query",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "A string representing the search term for the desired clip art. Limited to 100 characters. Good examples: cat, dog, dna, brain, heart, etc."},
+                    },
+                    "required": ["query"]
+                }
+                
+            },
+        ],
+        tool_choice={"type": "auto"},
+        max_tokens=1000,
+        temperature=1,
+        system="You are an expert at identifying clip art needs from animation plans. Answer the user's request using relevant tools (if they are available). Before calling a tool, do some analysis within \<thinking>\</thinking> tags.",
+        messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": get_clip_art_prompt(text)
+                        }
+                    ]
+            }
+        ]
+    )
+    
+    # Find examples mentioned in the animation plan using string parsing
+    mentioned_examples = []
+    for example in examples_list:
+        if example.lower() in animation_plan.lower():
+            mentioned_examples.append(example)
+    print(f"mentioned examples: \n {mentioned_examples} \n\n")
+    clip_art_queries = []
+
+    
+    for content in message.content:
+        if isinstance(content, anthropic.types.tool_use_block.ToolUseBlock):
+            print(content)
+            if content.name == 'fetch_clip_art':
+                query = content.input.get('query', '')
+                clip_art_queries.append(query)
+
     code_context = []
-    for example in relevant_examples:
+    clip_art_paths = []
+    for example in mentioned_examples:
         code_context.append(fetch_context(example))
-    start = time.time()
-    end = time.time()
-    print(f"time taken: {end - start}")
     print(f"code context: \n {code_context} \n\n")
-    code_prompt = get_code_prompt(text, code_context, clip_art_paths, use_claude)
-    if use_claude:
-        message = claude.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            max_tokens=2000,
+    print(f"clip art queries: \n {clip_art_queries} \n\n")
+    for query in clip_art_queries:
+        response = fetch_clip_art(query)
+        if response['success']:
+            clip_art_paths.append(response['path'])
+    print(f"clip art paths: \n {clip_art_paths} \n\n")
+    code_prompt = get_code_prompt(text, animation_plan, code_context, clip_art_paths)
+    message = claude.messages.create(
+        model="claude-3-5-sonnet-20240620",
+        max_tokens=4096,
             temperature=1,
-            system="You are an expert Manim programmer. Respond only with complete, executable Manim code.",
+            system="You are an expert Manim programmer. Before responding with the code, please make sure to think step by step and consider all the parameters and context. Then, respond with the complete, executable Manim code.",
             messages=[
                 {
                     "role": "user",
@@ -109,26 +162,15 @@ def generate_manim_code(text: str, style: str, use_claude: bool) -> str:
                             "text": code_prompt
                         }
                     ]
-                }
-            ]
-        )
-        full_content = message.content[0].text
-        start_index = full_content.find("```python")
-        end_index = full_content.rfind("```")
-        if start_index != -1 and end_index != -1:
-            manim_code = full_content[start_index + len("```python"):end_index].strip()
-        else:
-            manim_code = full_content.strip()
-        print(manim_code)
-    else:
-        pro_model = genai.GenerativeModel('gemini-1.5-pro')
-        code_response = pro_model.generate_content(code_prompt)
-        manim_code = code_response.text.strip()
-        print(manim_code)
-
-    manim_code = manim_code.replace("```python", "").replace("```", "")
-
+            }
+        ]
+    )
+    full_content = message.content[0].text
+    print(f"full content: \n {full_content} \n\n")
+    manim_code = full_content.split("```python")[1].split("```")[0].strip()
+    print(f"manim code: \n {manim_code} \n\n")
     return manim_code
+    #
 
 def fetch_context(text: str, top_k: int = 5):
     rag = RAG(persist_dir="backend/RAG/examples_base")

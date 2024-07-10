@@ -1,6 +1,13 @@
 from manim import *
 
 class RightArcAngleExample(Scene):
+    """
+    This class demonstrates various ways to draw right angles using Manim.
+    It can be useful for:
+    - Illustrating geometric concepts in mathematics education
+    - Visualizing architectural or engineering drawings
+    - Demonstrating perpendicular relationships in physics diagrams
+    """
     def construct(self):
         line1 = Line( LEFT, RIGHT )
         line2 = Line( DOWN, UP )
@@ -18,6 +25,13 @@ class RightArcAngleExample(Scene):
         self.add(plots)
         
 class AngleExample(Scene):
+    """
+    This class showcases various ways to represent angles in Manim.
+    It can be practical for:
+    - Explaining trigonometry concepts in mathematics
+    - Visualizing angles in physics problems (e.g., projectile motion, optics)
+    - Illustrating design principles in graphic design or UI/UX courses
+    """
     def construct(self):
         line1 = Line( LEFT + (1/3) * UP, RIGHT + (1/3) * DOWN )
         line2 = Line( DOWN + (1/3) * RIGHT, UP + (1/3) * LEFT )
@@ -39,6 +53,13 @@ class AngleExample(Scene):
         self.add(plots)
 
 class FilledAngle(Scene):
+    """
+    This class demonstrates how to create and display a filled angle in Manim.
+    It can be useful for:
+    - Visualizing sectors in circular charts or pie graphs
+    - Illustrating angular measurements in astronomy (e.g., celestial coordinates)
+    - Demonstrating concepts like solid angles in physics or engineering
+    """
     def construct(self):
         l1 = Line(ORIGIN, 2 * UP + RIGHT).set_color(GREEN)
         l2 = (

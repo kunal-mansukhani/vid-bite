@@ -1,52 +1,23 @@
-Architecture for Chrome Extension: Text-to-Manim Video Generator
+Prompting Workflow
 
-1. Chrome Extension Components:
-   a. Manifest.json: Define extension permissions and background scripts
-   b. Content script: Capture highlighted text and communicate with background script
-   c. Background script: Handle main logic and communication with server
-   d. Popup UI: Display progress and final video
 
-2. Server-side Components:
-   a. API endpoint: Receive requests from the Chrome extension
-   b. LLM integration: Generate Manim code from input text
-   c. Manim renderer: Execute generated Manim code and create video
-   d. Video storage: Temporarily store rendered videos
+Query -> Code -> Video
 
-3. Technologies:
-   a. Frontend:
-      - JavaScript for Chrome extension logic
-      - HTML/CSS for popup UI
-      - Chrome Extension APIs
-   b. Backend:
-      - Python for server-side logic
-      - Flask or FastAPI for API endpoints
-      - OpenAI API or similar for LLM integration
-      - Manim library for video generation
-   c. Infrastructure:
-      - Cloud hosting (e.g., AWS, Google Cloud, or Heroku)
-      - Docker for containerization
-      - Redis or similar for caching and job queues
+Query -> Prompt(s) -> Code -> Video
 
-4. Workflow:
-   a. User highlights text on a webpage
-   b. Content script captures the highlighted text
-   c. Background script sends text to server API
-   d. Server processes request:
-      - Generate Manim code using LLM
-      - Render Manim video
-      - Store video temporarily and return URL
-   e. Extension receives video URL and displays in popup
 
-5. Considerations:
-   a. Implement proper error handling and user feedback
-   b. Use asynchronous processing for long-running tasks
-   c. Implement caching to avoid redundant video generation
-   d. Ensure security measures for API communication
-   e. Optimize video rendering for performance
-   f. Implement user settings for customization options
+What prompts generate the best code?
 
-6. Potential Enhancements:
-   a. Add support for different video styles or templates
-   b. Implement a history feature for previously generated videos
-   c. Allow users to edit generated Manim code before rendering
-   d. Integrate with cloud storage services for permanent video storage
+
+Query -> Best Examples -> Prompt -> Code
+
+
+
+
+
+
+Query -> Plan Prompt
+
+Plan Prompt
+(Take in examples + query)
+Output plan that uses examples + clip art 

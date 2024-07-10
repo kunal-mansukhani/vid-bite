@@ -7,9 +7,10 @@ from fastapi import HTTPException
 import google.generativeai as genai
 from backend.constants import get_error_fixing_prompt
 from backend.RAG.RAG import RAG
+import anthropic
+claude = anthropic.Anthropic(api_key='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')
 
 def render_manim_video(manim_code: str, max_attempts=4):
-    pro_model = genai.GenerativeModel('gemini-1.5-pro')
     attempt = 0
     while attempt < max_attempts:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
@@ -45,8 +46,25 @@ def render_manim_video(manim_code: str, max_attempts=4):
                 print(final_error)
                 documentation_context = fetch_context(final_error)
                 print(documentation_context)
-                fix_response = pro_model.generate_content(get_error_fixing_prompt(manim_code, e.stdout + '\n' + e.stderr) + f"\n\nAdditional documentation context that may be helpful: {documentation_context}")
-                corrected_code = fix_response.text.split("```python")[-1].split("```")[0].strip()
+                message = claude.messages.create(
+                model="claude-3-5-sonnet-20240620",
+                max_tokens=2000,
+                    temperature=1,
+                    system="You are an expert Manim programmer and debugger. Before responding with the code, please make sure to think step by step and consider all the parameters and context. Then, respond with the complete, executable Manim code.",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": get_error_fixing_prompt(manim_code, e.stdout + '\n' + e.stderr) + f"\n\nAdditional documentation context that may be helpful: {documentation_context}"
+                                }
+                            ]
+                    }
+                ]
+            )
+                fix_response = message.content[0].text
+                corrected_code = fix_response.split("```python")[-1].split("```")[0].strip()
                 manim_code = corrected_code
                 print(f"Corrected code: {corrected_code}")
             else:

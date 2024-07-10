@@ -27,7 +27,7 @@ body, html {
   
   .form-container {
     width: 80%;
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
   }
   
@@ -95,4 +95,16 @@ body, html {
   button:hover:enabled {
     background-color: #7c3aed;
   }
+  .video-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+  }
   
+  .video-player {
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    object-fit: contain;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }

@@ -20,7 +20,6 @@
 
 ## 🧠 Concept
 
-
 Inspired by the educational style of 3Blue1Brown's videos, VidBite aims to revolutionize the way mathematical and scientific concepts are visualized by automating the generation of custom Manim code and videos. Our application leverage modern-day LLMs to produce high-quality and dynamic visualizations of concepts tailored to specific user needs. 
 
 Users input their mathematical or scientific concepts into the application, which then utilizes powerful AI models to generate corresponding Manim code. This code can be further customized and is ready to be rendered into high-quality animations.
@@ -46,8 +45,12 @@ To use VidBite:
 ## Models Used
 | Model                       | Description                                                                 | Status  |
 |-----------------------------|-----------------------------------------------------------------------------|---------|
-| Claude 3.5 Sonnet (Paid)    | Powerful language model for generating precise Manim code with enhanced performance and latest features.  | ✅      |
+| Claude 3.5 Sonnet    | Powerful language model for generating precise Manim code with enhanced performance and latest features.  | ✅      |
 
+## 🔮 Future Improvements
 
+- Chrome Extension: Develop a Chrome extension that allows users to highlight any novel STEM-related concepts encountered while browsing the web and accordingly generate explanatory videos.
+- Customizable Video Settings: Introduce settings to adjust various aspects of the generated videos, such as different voice options, subtitles, and video durations, to enhance personalization.
+- Image to Video Conversion: Implement functionality to convert observed images into explanatory videos, providing a visual representation of static images as well.
 
 

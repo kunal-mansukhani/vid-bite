@@ -8,7 +8,7 @@ import google.generativeai as genai
 from backend.constants import get_error_fixing_prompt
 from backend.RAG.RAG import RAG
 import anthropic
-claude = anthropic.Anthropic(api_key='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')
+claude = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
 
 def render_manim_video(manim_code: str, max_attempts=4):
     attempt = 0

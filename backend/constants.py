@@ -3,48 +3,35 @@ from pathlib import Path
 import importlib
 import inspect
 
-def get_plan_prompt(text: str, examples: List[str]) -> str:
-    return f"""
-    <task>
-    Develop a comprehensive plan for a 10-30 second animation using Manim to visualize the following concept: {text}
-    </task>
-
-    <context>
-    If helpful, here is a list of examples we have. Narrow down the top 3 most relevant and decide if and how to use them in your animation plan. Do not mention more than 3:
-    {examples}
-    </context>
-
-    <requirements>
-    Please provide:
-    1. A clear, step-by-step outline of the animation sequence
-    2. Detailed instructions on how to transition out of one scene and into another
-    3. Extremely precise and detailed descriptions of each visual element and transition
-    4. Specific timing suggestions for each step and specific size and locations for each visual/text piece
-    5. Potential technical challenges a programmer might face during implementation
-    6. Proposed solutions or workarounds for each identified challenge
-    7. For each scene, include a section about the visuals, text, transition in, and transition out, and voice over text
-    8. If standard clip art images could help the animation be more clear, then explicitly state that in your animation plan and be EXTREMELY conservative with your clip art selection. No more than 2 and they should be generic stock photos and not be able to be visualized using Manim code.
-
-    <instructions>
-    Your plan should be EXTREMELY detailed to allow a programmer to implement the animation in Manim without additional guidance. Your animation plan should include beautiful descriptions of visuals that will demonstrate the concept to the watcher. Also, explictly mention UP TO THREE EXACT example classes you used in your animation plan (e.g ExampleBackgroundRectangle, UsingRotate, DodecahedronScene). No more than 3
-    </instructions>
-    """
 
 def get_relevant_examples_prompt(examples: List[str], query: str) -> str:
     return f"""
     <task>
     Here is a list of Manim examples we have. Narrow down the top 3 most relevant to visualizing {query} and decide if they will be helpful in visualizing the concept in Manim.
     {examples}
-
     </task>
 
     <instructions>
-    Think step-by-step. Output a list of the exact names of the top 3 most relevant example classes. (e.g. ExampleBackgroundRectangle, UsingRotate, DodecahedronScene).
+    Think step-by-step. Output a list of the exact names of the top 3 most relevant example classes from the list above. (e.g. ExampleBackgroundRectangle, UsingRotate, DodecahedronScene). Only output class names from the provided list. Do not come up with your own examples.
     </instructions>
     """
 def get_clip_art_prompt(query: str):
     return f"""
-    The goal is to visualize {query} using Manim animations. Determine if the animation for this query might require clip art images. Example: for visualizing a CNN, a clip art image of a cat could be useful as an example input image. Be EXTREMELY conservative with your clip art selection. No more than 2 and they should be generic stock photos and not be able to be easily visualized using Manim code. If no clip art is necessary, then output nothing
+    <task>
+    The goal is to visualize {query} using Manim animations. Determine if the animation for this query might require clip art images.
+    </task>
+
+    <example>
+    For visualizing a CNN, a clip art image of a cat could be useful as an example input image.
+    </example>
+
+    <constraints>
+    Be EXTREMELY conservative with your clip art selection. No more than 2 and they should be able to be found as stock photos and not be able to be easily visualized using Manim code. Always output specific queries such that given the filename it is easy to know what it is. 
+    </constraints>
+
+    <output_instruction>
+    If no clip art is necessary, then output nothing.
+    </output_instruction>
     """
 
 def get_code_prompt(text: str, animation_plan: str, examples_context: List[str], asset_paths: List[str]) -> str:
@@ -66,7 +53,7 @@ def get_code_prompt(text: str, animation_plan: str, examples_context: List[str],
     </examples_context>
 
     <instructions>
-    Think step-by-step
+    Think step-by-step. Make the animation as visually impressive as possible. 
     </instructions>
 
     <requirements>

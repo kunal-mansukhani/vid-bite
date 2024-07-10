@@ -23,9 +23,9 @@ const Popup: React.FC = () => {
       })
       .then(response => response.json())
       .then(data => {
-        if (data.s3VideoUrl) {
-          setVideoUrl(data.s3VideoUrl);
-          console.log('Video URL:', data.s3VideoUrl);
+        if (data.videoUrl) {
+          setVideoUrl(data.videoUrl);
+          console.log('Video URL:', data.videoUrl);
         } else {
           throw new Error('Video URL not found in the response');
         }
@@ -42,9 +42,9 @@ const Popup: React.FC = () => {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ action: 'generateVideo', text: inputText }, (response) => {
         setIsLoading(false);
-        if (response.s3VideoUrl) {
-          setVideoUrl(response.s3VideoUrl);
-          console.log('Video URL:', response.s3VideoUrl);
+        if (response.videoUrl) {
+          setVideoUrl(response.videoUrl);
+          console.log('Video URL:', response.videoUrl);
         } else if (response.error) {
           setError(response.error);
         }
@@ -79,8 +79,12 @@ const Popup: React.FC = () => {
         {isLoading && <p>Generating video...</p>}
         {error && <p>Error: {error}</p>}
         {videoUrl && (
-          <div>
-            <video controls src={videoUrl} style={{ maxWidth: '100%', marginTop: '10px' }}>
+          <div className="video-container">
+            <video 
+              controls 
+              src={videoUrl} 
+              className="video-player"
+            >
               Your browser does not support the video tag.
             </video>
           </div>

@@ -10,10 +10,9 @@ from pathlib import Path
 
 from backend.RAG.RAG import RAG
 
-genai.configure(api_key='AIzaSyCmf5l6rdp6UPR29W15b-6AaVrvWrA3-wU')
-claude = anthropic.Anthropic(api_key='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')
+claude = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
 
-PIXABAY_API_KEY = '2540675-37862254858a0d195f577f35b'  # Replace with your actual Pixabay API key
+PIXABAY_API_KEY = os.getenv('PIXABAY_API_KEY')
 def fetch_clip_art(query: str, colors: str = None) -> dict:
     """Fetch clip art images from Pixabay API based on a search query and optional color filter.
 
@@ -68,7 +67,7 @@ def generate_manim_code(text: str) -> str:
             examples_list.extend(class_names)
 
     message = claude.messages.create(
-        model="claude-3-haiku-20240307",
+        model="claude-3-5-sonnet-20240620",
         max_tokens=1500,
         temperature=1,
         system="You are an expert and knowledgeable teacher and Manim programmer. You excel at visualizing concepts in a way that is easy to understand and easy to implement in Manim.",
@@ -88,7 +87,7 @@ def generate_manim_code(text: str) -> str:
     print(f"animation plan: \n {animation_plan} \n\n")
     
     message = claude.messages.create(
-        model="claude-3-haiku-20240307",
+        model="claude-3-5-sonnet-20240620",
         tools=[
             {
                 "name": "fetch_clip_art",

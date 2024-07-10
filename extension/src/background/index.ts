@@ -1,4 +1,4 @@
-const generateVideo = (text: string): Promise<{ videoPath: string } | { error: string }> => {
+const generateVideo = (text: string): Promise<{ videoUrl: string } | { error: string }> => {
   return fetch('http://localhost:8000/generate_video', {
     method: 'POST',
     headers: {
@@ -8,9 +8,9 @@ const generateVideo = (text: string): Promise<{ videoPath: string } | { error: s
   })
     .then(response => response.json())
     .then(data => {
-      if (data.videoPath) {
+      if (data.videoUrl) {
         console.log('in background script Video path:', data.videoPath);
-        return { videoPath: data.videoPath };
+        return { videoUrl: data.videoUrl };
       } else {
         throw new Error('Video path not found in the response');
       }

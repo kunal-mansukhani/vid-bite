@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import HTTPException
 import google.generativeai as genai
 from backend.constants import get_error_fixing_prompt
-from backend.rag.RAG import RAG
+from backend.RAG.RAG import RAG
 
 def render_manim_video(manim_code: str, max_attempts=4):
     pro_model = genai.GenerativeModel('gemini-1.5-pro')

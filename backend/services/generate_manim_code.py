@@ -8,7 +8,7 @@ import json
 import time
 from pathlib import Path
 
-from backend.rag.RAG import RAG
+from backend.RAG.RAG import RAG
 
 genai.configure(api_key='AIzaSyCmf5l6rdp6UPR29W15b-6AaVrvWrA3-wU')
 claude = anthropic.Anthropic(api_key='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')

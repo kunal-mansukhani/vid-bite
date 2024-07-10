@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import HTTPException
 import google.generativeai as genai
 from backend.constants import get_error_fixing_prompt
-from backend.rag.RAG import RAG
+from backend.RAG.RAG import RAG
 import anthropic
 claude = anthropic.Anthropic(api_key='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')
 

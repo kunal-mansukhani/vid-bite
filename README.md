@@ -30,7 +30,7 @@ Here's an example video that VidBite generated for the query "CPU Pipelining":
 https://github.com/kunal-mansukhani/vid-bite/assets/66945981/14756d7c-c069-419e-b967-3829f54453ed
 
 ## 🏛️ System Architecture
-<img width="750" alt="Screenshot 2024-07-10 at 11 30 52 PM" src="https://github.com/kunal-mansukhani/vid-bite/assets/66945981/c8110246-3650-49a9-9da9-c051f947f929">
+<img width="482" alt="Screenshot 2024-07-11 at 12 03 41 AM" src="https://github.com/kunal-mansukhani/vid-bite/assets/66945981/dc2c6655-65ea-451a-9105-b29c3af4e06c">
 
 ## 🛠️ Usage (Development)
 To use VidBite:
